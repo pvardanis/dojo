@@ -2,13 +2,11 @@
 
 **Design spec · 2026-04-18**
 
-A local web app that helps Danny prepare for MLOps interviews by turning
-source material (Black Lodge wiki docs, URLs, raw text, or just a topic
-prompt) into studyable notes and Q&A cards, then drilling those cards
-keyboard-first.
+A local web app for MLOps interview prep. It turns source material
+(Black Lodge wiki docs, URLs, raw text, or just a topic prompt) into
+studyable notes and Q&A cards, then drills those cards keyboard-first.
 
-Built partially as a study tool, partially as a build exercise to rebuild
-programming muscle after a ~1-year break. Design decisions favor
+Built as both a study tool and a build exercise: design decisions favor
 interview-relevant patterns (DDD layering, DIP, async SQLAlchemy,
 structured LLM output) over shortcuts that would ship faster but teach
 less.
@@ -255,9 +253,9 @@ dojo/
     └── e2e/                 # Playwright, full HTTP, fake LLM
 ```
 
-Every Python file starts with two `# ABOUTME:` lines per Danny's global
-rule. File sizes kept ≤100 lines per the python-project-setup wiki
-(split if >150).
+Every Python file starts with two `# ABOUTME:` lines per project
+convention. File sizes kept ≤100 lines per the python-project-setup
+wiki (split if >150).
 
 ### 4.2 Library picks
 
@@ -434,8 +432,8 @@ Everything inside is internal and raises domain exceptions.
 - FastAPI exception handlers at the web layer translate domain
   exceptions into HTTP responses with readable messages.
 - No silent fallbacks, no "try another provider" heroics. Fail loud.
-- Per Danny's testing rules, every expected-error path gets a test that
-  asserts the error message and type.
+- Per the testing strategy in §7, every expected-error path gets a test
+  that asserts the error message and type.
 
 ---
 
@@ -537,7 +535,7 @@ Kept terse — under 150 lines — so Claude reads it efficiently.
 
 ### 8.5 Wiki updates (proposed, not yet written)
 
-During implementation, propose additions to Danny's Black Lodge
+During implementation, propose additions to the Black Lodge
 `python-project-setup.md`:
 
 - A "Makefile conventions" section codifying the standard targets so
@@ -546,8 +544,8 @@ During implementation, propose additions to Danny's Black Lodge
   to Makefile targets (keeps CI logic reproducible locally via
   `make check`).
 
-Both are evergreen patterns, not project-specific. Draft first, show
-Danny, write after review.
+Both are evergreen patterns, not project-specific. Draft first, review,
+then write.
 
 ---
 
@@ -559,7 +557,7 @@ sessions don't have to re-litigate.
 | Decision | Rationale |
 | --- | --- |
 | Name: Dojo | Training-ground metaphor; short; non-Twin-Peaks so it doesn't overlap with Black Lodge knowledge base |
-| Stack: Python + FastAPI + HTMX + Pico | Python is Danny's daily language, MLOps-native, exercises real service patterns without drowning in frontend work |
+| Stack: Python + FastAPI + HTMX + Pico | Python matches the primary MLOps language, exercises real service patterns without drowning in frontend work |
 | Async SQLAlchemy | Learning goal — async patterns are interview-relevant for MLOps backends |
 | Pico.css | Zero-build; UI is not a focus for MVP |
 | API key via env + `.env` via pydantic-settings | Industry-standard, keeps secrets out of domain/app layers; swap to OS keychain later if desired |
@@ -657,4 +655,4 @@ Listed so they don't reappear as "did we forget?" later.
 ## 12. Open questions
 
 None at spec-writing time. All decisions locked above. If implementation
-surfaces new forks, they'll be raised with Danny before being decided.
+surfaces new forks, they'll be raised with the user before being decided.
