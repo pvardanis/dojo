@@ -192,6 +192,46 @@ Scoped and designed-for, but not shipping in v1.
 
 ## Traceability
 
-Requirements → phases, populated by the roadmap step.
+Requirements → phases, set by `ROADMAP.md`. Each v1 requirement maps
+to exactly one phase.
 
-(Empty at creation — filled when `ROADMAP.md` is created.)
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| INGEST-01 | Phase 4 — Generate → Review → Save Flow | Pending |
+| INGEST-02 | Phase 4 — Generate → Review → Save Flow | Pending |
+| INGEST-03 | Phase 4 — Generate → Review → Save Flow | Pending |
+| GEN-01 | Phase 4 — Generate → Review → Save Flow | Pending |
+| GEN-02 | Phase 3 — Infrastructure Adapters | Pending |
+| GEN-03 | Phase 4 — Generate → Review → Save Flow | Pending |
+| DRAFT-01 | Phase 2 — Domain & Application Spine | Pending |
+| PERSIST-01 | Phase 4 — Generate → Review → Save Flow | Pending |
+| PERSIST-02 | Phase 3 — Infrastructure Adapters | Pending |
+| DRILL-01 | Phase 5 — Drill Mode | Pending |
+| DRILL-02 | Phase 5 — Drill Mode | Pending |
+| DRILL-03 | Phase 5 — Drill Mode | Pending |
+| DRILL-04 | Phase 5 — Drill Mode | Pending |
+| DRILL-05 | Phase 5 — Drill Mode | Pending |
+| CARD-01 | Phase 4 — Generate → Review → Save Flow | Pending |
+| CARD-02 | Phase 6 — Read Mode & Card Management | Pending |
+| CARD-03 | Phase 6 — Read Mode & Card Management | Pending |
+| READ-01 | Phase 6 — Read Mode & Card Management | Pending |
+| READ-02 | Phase 6 — Read Mode & Card Management | Pending |
+| LLM-01 | Phase 3 — Infrastructure Adapters | Pending |
+| LLM-02 | Phase 3 — Infrastructure Adapters | Pending |
+| LLM-03 | Phase 1 — Project Scaffold & Tooling | Pending |
+| OPS-01 | Phase 1 — Project Scaffold & Tooling | Pending |
+| OPS-02 | Phase 1 — Project Scaffold & Tooling | Pending |
+| OPS-03 | Phase 1 — Project Scaffold & Tooling | Pending |
+| OPS-04 | Phase 1 — Project Scaffold & Tooling | Pending |
+| TEST-01 | Phase 2 — Domain & Application Spine | Pending |
+| TEST-02 | Phase 1 — Project Scaffold & Tooling | Pending |
+| TEST-03 | Phase 2 — Domain & Application Spine | Pending |
+| DOCS-01 | Phase 7 — Documentation & End-to-End Coverage | Pending |
+| DOCS-02 | Phase 7 — Documentation & End-to-End Coverage | Pending |
+
+**Coverage:** 31 / 31 requirements mapped.
+
+**Cross-cutting notes (tracked in the assigned phase's success criteria, not re-assigned):**
+- TEST-03 contract tests are scaffolded in Phase 2 (where every port is first declared) and extended in Phase 3 as each new real adapter is introduced.
+- M3 drill animation timing is a Phase 5 success-criterion concern (prototype early in the phase, not at the end).
+- C10 draft-store race conditions are a Phase 3 success-criterion concern (atomic `pop`, `asyncio.Lock`, lazy TTL) even though DRAFT-01 (the Protocol port) is owned by Phase 2.
