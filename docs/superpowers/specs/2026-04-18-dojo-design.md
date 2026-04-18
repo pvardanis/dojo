@@ -4,7 +4,8 @@
 
 A local web app for MLOps interview prep. It turns source material
 (Black Lodge wiki docs, URLs, raw text, or just a topic prompt) into
-studyable notes and Q&A cards, then drills those cards keyboard-first.
+studyable notes and Q&A cards, then drills those cards with a
+dating-app-style interaction (arrow keys or on-screen buttons).
 
 Built as both a study tool and a build exercise: design decisions favor
 interview-relevant patterns (DDD layering, DIP, async SQLAlchemy,
@@ -25,7 +26,9 @@ less.
   source.
 - Let the user review generated cards (edit, reject individually) before
   anything persists.
-- Drill saved cards keyboard-first (reveal, rate correct/incorrect).
+- Drill saved cards with arrow keys or on-screen buttons (Bumble/Tinder
+  style): ← for wrong, → for right, Space to reveal, card slides off
+  on commit.
 - Render saved notes as readable markdown outside drill mode.
 - Ship with one LLM provider (Anthropic) behind a `LLMProvider` port, so
   adding OpenAI / Ollama later is one concrete class and one composition
@@ -360,7 +363,7 @@ sequenceDiagram
 
     loop per card
         U->>U: press Space — client reveals answer
-        U->>W: POST rating (1 wrong, 2 right)
+        U->>W: POST rating (← wrong, → right)
         W->>UC: record_review(card_id, rating)
         UC->>R: append CardReview row
         UC-->>W: next card or "done"
@@ -368,8 +371,18 @@ sequenceDiagram
     end
 ```
 
-Keyboard-first. Space reveals, `1` = incorrect, `2` = correct. Summary
-shows X / Y correct and session duration.
+Dating-app-style interaction (Bumble / Tinder on web):
+
+- **Space** → reveal the answer.
+- **`→`** (right arrow) or click the on-screen ✓ button → correct; card
+  animates sliding off to the right.
+- **`←`** (left arrow) or click the on-screen ✗ button → incorrect;
+  card animates sliding off to the left.
+- No mouse-drag gesture in MVP — the swipe _feel_ lives in the commit
+  animation, not a drag interaction. Real mouse-drag is deferred to
+  Phase 3 polish if it turns out to matter.
+
+Summary at end of deck shows X / Y correct and session duration.
 
 ### 5.3 Read
 
@@ -565,7 +578,7 @@ sessions don't have to re-litigate.
 | Drafts held in memory, DB writes only on user save | Avoids orphan rows; acceptable to lose drafts on backend restart for single-user local |
 | Notes overwrite, cards append on regenerate | Notes are generated material — safe to lose; cards carry review history — safe to keep |
 | No SRS in MVP | Needs scheduler + due queue + changed drill UX; add later by extending Card columns and reading from CardReview log |
-| Keyboard-first drill | Space reveals, 1 = wrong, 2 = right. Anki-style UX, fast enough to burn through 50 cards in 10 min |
+| Dating-app-style drill | Space reveals, ← wrong, → right (or click on-screen ✗/✓ buttons). Card slides off on commit for the swipe feel. No mouse-drag in MVP — the pattern Bumble and Tinder use on desktop |
 | Stateless ports = Callable alias, stateful/multi-method = Protocol | Protocol-vs-function is a separate decision from Protocol-vs-ABC; see global CLAUDE.md |
 | Fakes, not mocks | Behavior-testing via hand-written fakes that implement the port — assertable state, not call patterns |
 | No `make db-reset` | Foot-gun at the exact spot the DB-safety instinct says avoid; manual `rm dojo.db && make migrate` is sufficient |
@@ -583,7 +596,8 @@ Everything above. Definition of done:
 - Generate a card set from a Black Lodge wiki file, a URL, and a topic
   prompt.
 - Review, edit, reject individual cards; save what's approved.
-- Drill saved cards keyboard-only.
+- Drill saved cards via arrow keys or on-screen buttons, with card
+  slide-off animation on commit.
 - Read saved notes rendered from markdown.
 - `make check` passes: ruff, ty, interrogate (100%), pytest (>90%
   coverage).
