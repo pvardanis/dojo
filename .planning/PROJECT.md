@@ -40,6 +40,13 @@ generate → drill → learn — must work.
       page, with linked cards and a "Drill these" button
 - [ ] Free-form tags on cards; default-copied from source, editable per
       card
+- [ ] User can edit or delete any saved card (not just during pre-save
+      review) with confirmation on delete
+- [ ] Card question and answer content rendered as markdown in drill
+      mode (code blocks, YAML, commands); HTML output sanitized with
+      `nh3`
+- [ ] Drill start page lets user cap session length (e.g. 10 / 25 / all)
+      before starting
 - [ ] Card-review history persisted (append-only `CardReview` log)
 - [ ] LLM provider abstracted via port; Anthropic is the one shipped
       concrete. Swapping = new class + one composition-root line
@@ -144,6 +151,13 @@ generate → drill → learn — must work.
 | No `make db-reset` target | Foot-gun at the exact spot the DB-safety instinct says avoid; manual reset is sufficient | — Pending |
 | DB-safety rule: Claude confirms before destructive ops during dev chats | Not a product UI rule; about Claude's actions during implementation | — Pending |
 | Single-source-of-truth for design: spec at `docs/superpowers/specs/2026-04-18-dojo-design.md` | PROJECT.md is a distilled view; the spec is authoritative on implementation | — Pending |
+| `DraftStore` is a first-class Protocol port (not an ad-hoc dict in a use case) | Research flagged the spec referenced drafts without a declared port; explicit port enables testing + future Redis/SQLite-backed swap | — Pending |
+| `tenacity` for retry/backoff on LLM calls | Replaces hand-rolled exponential backoff with a battle-tested lib; matches spec §6.1 intent | — Pending |
+| `structlog` for structured logging | Cheap to add up front; pays off in debugging and future observability; matches `python-project-setup.md` logging convention | — Pending |
+| `nh3` for HTML sanitization of LLM-generated markdown | Required whenever we render LLM output as HTML (Read mode, drill markdown); security flag, not a nice-to-have | — Pending |
+| Post-save card edit/delete in MVP | Table-stakes for flashcard apps; small code cost; avoids "why can't I fix my own cards" hole | — Pending |
+| Markdown in drill Q&A (not just plain text) | MLOps questions include code/YAML/commands; `markdown-it-py` already a dep for notes; `nh3` sanitizes | — Pending |
+| Session size cap on drill start | Prevents overwhelming 100+ card sessions; simple dropdown; aligns with daily-study UX | — Pending |
 
 ## Evolution
 
