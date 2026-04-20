@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+
+# uv
+.uv/
+uv-cache/
+
+# Test / build
+.pytest_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# Secrets — NEVER commit these (LLM-03)
+.env
+
+# Local DB (created by alembic upgrade head)
+dojo.db
+dojo.db-journal
+dojo.db-wal
+dojo.db-shm
+
+# IDE
+.idea/
+.vscode/
+
+# macOS
+.DS_Store
