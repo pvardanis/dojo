@@ -47,7 +47,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   7. `ANTHROPIC_API_KEY` loads through pydantic-settings from `.env`; `.env.example` is checked in, `.env` is gitignored, and the key never leaves settings
   8. `structlog` is configured at app startup and every module obtains its logger via a shared `get_logger(__name__)` helper
 **Plans**: 6 plans
-  - [ ] 01-01-project-bootstrap-PLAN.md — pyproject.toml + .gitignore + .env.example + CLAUDE.md reconcile
+  - [x] 01-01-project-bootstrap-PLAN.md — pyproject.toml + .gitignore + .env.example + CLAUDE.md reconcile
   - [ ] 01-02-settings-logging-PLAN.md — app/settings.py (pydantic-settings + SecretStr) + app/logging_config.py (structlog)
   - [ ] 01-03-database-alembic-PLAN.md — async SQLAlchemy session.py + async Alembic env.py + empty initial revision
   - [ ] 01-04-web-routes-PLAN.md — app/main.py composition root + home/health routes + Jinja templates
