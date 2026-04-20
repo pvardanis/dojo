@@ -126,7 +126,15 @@ here — but the scaffold must make them startable.
   Phase 2+ creates `app/domain/`, `app/application/`,
   `app/infrastructure/repositories/`, `app/infrastructure/llm/`,
   `app/infrastructure/sources/` as each phase needs them. No empty
-  `__init__.py` shells.
+  `__init__.py` shells. **Note:** D-11's "no empty shells" rule applies
+  to subpackages that serve no structural purpose. Package markers
+  required for Python's import resolution (`app/__init__.py`,
+  `app/infrastructure/__init__.py`, `app/infrastructure/db/__init__.py`,
+  `app/web/__init__.py`, `app/web/routes/__init__.py`) ARE created
+  because D-20 makes Dojo an installable package and Python cannot
+  resolve `app.infrastructure.db.session` without them. Each such
+  marker contains only the two-line ABOUTME header plus a one-line
+  module docstring; no re-exports.
 - **D-12:** `/` renders a minimal Jinja home page (title "Dojo" +
   placeholder text — no real links yet, the flows don't exist). This
   proves the Jinja wiring end-to-end (autoescape on, template loader
@@ -182,6 +190,38 @@ here — but the scaffold must make them startable.
   import Base` without PYTHONPATH hacks. This also gives us `uv run
   alembic ...` and `uv run pytest` that always see the current source
   tree.
+
+### TDD Exception (Phase 1 only)
+
+- **D-21:** **TDD Exception — Phase 1 bootstraps the harness itself.**
+  CLAUDE.md Rule #1 mandates strict red → green → refactor TDD for
+  every new feature and bugfix. Phase 1 is an approved exception
+  because the test harness depends on production infrastructure that
+  must exist first:
+
+  - `conftest.py` fixtures (`_migrated_engine`, `_alembic_cfg`,
+    `session`) depend on `app/settings.py`, `app/logging_config.py`,
+    `app/infrastructure/db/session.py`, `migrations/env.py`, and
+    `migrations/versions/0001_initial.py` all being present.
+  - Writing tests first would be circular: the tests require fixtures,
+    the fixtures require the modules, and the modules are the unit-
+    under-test.
+
+  **Scope of the exception:**
+  - Applies ONLY to Phase 1 (scaffold + tooling).
+  - Plans 02, 03, 04 produce infrastructure verified by the smoke
+    tests written in Plan 05 after the fact.
+  - Waves 2 + 3 still run ruff + ty + interrogate + import smoke
+    checks, which catch the obvious regressions. The full pytest
+    suite lands in Wave 4 (Plan 05).
+  - **Phases 2+ return to strict TDD.** The `conftest.py` fixtures
+    built in Plan 05 become the template every Phase 2+ test consumes.
+
+  **Approval provenance:** This exception was approved by Danny in
+  the `/gsd-plan-phase 1` discussion on 2026-04-20, per CLAUDE.md
+  Rule #1 ("If you want exception to ANY rule, YOU MUST STOP and get
+  explicit permission from Danny first"). Plan 05 includes a matching
+  "## TDD Exception (Phase 1 only)" section that cites this decision.
 
 ### Claude's Discretion
 
@@ -355,3 +395,5 @@ None yet — this phase establishes them:
 
 *Phase: 01-project-scaffold-tooling*
 *Context gathered: 2026-04-20*
+</content>
+</invoke>

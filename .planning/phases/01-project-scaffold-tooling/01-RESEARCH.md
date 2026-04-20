@@ -1526,7 +1526,7 @@ are in their current-stable majors.
 acceptance that the planner will resolve them empirically during
 execution — `uv sync && make check` is the cheap oracle).
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Should `Settings.anthropic_api_key` have a placeholder default
    for Phase 1 so `make run` works without a real key?**
@@ -1544,6 +1544,7 @@ execution — `uv sync && make check` is the cheap oracle).
      real-or-dummy `.env`. Slightly more friction, slightly more
      honest about the required config surface.
    - **Flag for planner / discuss-phase review.**
+   - RESOLVED: `anthropic_api_key: SecretStr = SecretStr("dev-placeholder")` lands in Plan 02 Task 1 (app/settings.py). `.env.example` in Plan 01 Task 2 carries the "replace this for Phase 3 onward" comment.
 
 2. **Is `pytest-repeat` the right tool for SC #4's 10x check, or
    should we prefer a `make test-flakes` target with a shell loop?**
@@ -1556,6 +1557,7 @@ execution — `uv sync && make check` is the cheap oracle).
      self-documenting. The Makefile can expose it as
      `make test-flakes` that runs
      `uv run pytest tests/integration/test_db_smoke.py --count=10`.
+   - RESOLVED: `pytest-repeat>=0.9.4` added to `[dependency-groups].dev` in Plan 01 Task 1 (pyproject.toml). The `test-flakes` Makefile target lands in Plan 06 Task 1 and runs `uv run pytest tests/integration/test_db_smoke.py --count=10`.
 
 3. **Does `ty check migrations/` cleanly handle Alembic's dynamic
    import pattern?**
@@ -1568,6 +1570,7 @@ execution — `uv sync && make check` is the cheap oracle).
      initially scope to `ty check app` only** (exclude
      `migrations/`). If ty handles `migrations/` cleanly, broaden
      later. Open a follow-up task in Phase 2 to revisit.
+   - RESOLVED: Plan 06 Task 1 scopes the Makefile `typecheck` target to `uv run ty check app` only (NOT `ty check app migrations`). Phase 2 may revisit broadening to migrations/ once ty matures.
 
 ## Environment Availability
 

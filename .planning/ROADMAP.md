@@ -46,7 +46,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   6. GitHub Actions CI runs `make check` on push/PR against Python 3.12 and goes green on the scaffold
   7. `ANTHROPIC_API_KEY` loads through pydantic-settings from `.env`; `.env.example` is checked in, `.env` is gitignored, and the key never leaves settings
   8. `structlog` is configured at app startup and every module obtains its logger via a shared `get_logger(__name__)` helper
-**Plans**: TBD
+**Plans**: 6 plans
+  - [ ] 01-01-project-bootstrap-PLAN.md — pyproject.toml + .gitignore + .env.example + CLAUDE.md reconcile
+  - [ ] 01-02-settings-logging-PLAN.md — app/settings.py (pydantic-settings + SecretStr) + app/logging_config.py (structlog)
+  - [ ] 01-03-database-alembic-PLAN.md — async SQLAlchemy session.py + async Alembic env.py + empty initial revision
+  - [ ] 01-04-web-routes-PLAN.md — app/main.py composition root + home/health routes + Jinja templates
+  - [ ] 01-05-test-infrastructure-PLAN.md — tests/conftest.py async fixtures + 4 Phase 1 tests (db_smoke, home, logging_smoke, settings)
+  - [ ] 01-06-tooling-ci-PLAN.md — Makefile + .pre-commit-config.yaml + .github/workflows/ci.yml
 
 ### Phase 2: Domain & Application Spine
 **Goal**: The pure inner core of the app — domain entities, value objects, domain exceptions, application ports (Protocols + Callable aliases, including the DraftStore Protocol), Pydantic DTOs, and the GenerateFromSource use case for the TOPIC kind — exists and is fully driven by hand-written fakes at every DIP boundary, so the port shapes are locked before any adapter is written.
@@ -133,7 +139,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Project Scaffold & Tooling | 0/TBD | Not started | - |
+| 1. Project Scaffold & Tooling | 0/6 | Not started | - |
 | 2. Domain & Application Spine | 0/TBD | Not started | - |
 | 3. Infrastructure Adapters | 0/TBD | Not started | - |
 | 4. Generate → Review → Save Flow | 0/TBD | Not started | - |
