@@ -48,7 +48,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   8. `structlog` is configured at app startup and every module obtains its logger via a shared `get_logger(__name__)` helper
 **Plans**: 6 plans
   - [x] 01-01-project-bootstrap-PLAN.md — pyproject.toml + .gitignore + .env.example + CLAUDE.md reconcile
-  - [ ] 01-02-settings-logging-PLAN.md — app/settings.py (pydantic-settings + SecretStr) + app/logging_config.py (structlog)
+  - [x] 01-02-settings-logging-PLAN.md — app/settings.py (pydantic-settings + SecretStr) + app/logging_config.py (structlog)
   - [ ] 01-03-database-alembic-PLAN.md — async SQLAlchemy session.py + async Alembic env.py + empty initial revision
   - [ ] 01-04-web-routes-PLAN.md — app/main.py composition root + home/health routes + Jinja templates
   - [ ] 01-05-test-infrastructure-PLAN.md — tests/conftest.py async fixtures + 4 Phase 1 tests (db_smoke, home, logging_smoke, settings)
