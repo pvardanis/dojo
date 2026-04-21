@@ -60,27 +60,14 @@ def _clamp_third_party_loggers() -> None:
 
 
 @pytest.fixture(scope="session")
-def _db_env(test_db_url: str) -> AsyncIterator[None]:
-    """Point `DATABASE_URL` at the tmp DB for the whole session.
+def _alembic_cfg(test_db_url: str) -> AlembicConfig:
+    """Build an Alembic Config that points at the tmp DB.
 
-    env.py reads the URL via `get_settings().database_url`, and
-    `get_settings` is `@lru_cache`'d — so we set the env var AND
-    clear the cache before any migration or engine creation.
-    Without this, env.py migrates the default `dojo.db` instead of
-    the tmp DB, silently diverging from the session/engine fixtures.
+    env.py respects a caller-set URL (the `driver://user:pass@...`
+    placeholder is the only trigger for the settings fallback), so
+    setting it here is all that is needed — no DATABASE_URL env var
+    monkeypatch or get_settings.cache_clear gymnastics required.
     """
-    from app.settings import get_settings
-
-    with pytest.MonkeyPatch.context() as mp:
-        mp.setenv("DATABASE_URL", test_db_url)
-        get_settings.cache_clear()
-        yield
-    get_settings.cache_clear()
-
-
-@pytest.fixture(scope="session")
-def _alembic_cfg(test_db_url: str, _db_env: None) -> AlembicConfig:
-    """Build an Alembic Config that points at the tmp DB."""
     cfg = AlembicConfig("alembic.ini")
     cfg.set_main_option("sqlalchemy.url", test_db_url)
     return cfg
@@ -110,17 +97,24 @@ async def _migrated_engine(
 async def session(
     _migrated_engine,
 ) -> AsyncIterator[AsyncSession]:
-    """Function-scoped async session with outer-transaction rollback.
+    """Function-scoped async session with SAVEPOINT-based isolation.
 
-    Every test opens a session inside a transaction; teardown rolls
-    back so tests don't see each other's data (D-06).
+    Opens an outer transaction on a dedicated connection and binds
+    the session to it via `join_transaction_mode="create_savepoint"`.
+    Any `sess.commit()` or `sess.begin()` inside a test closes a
+    SAVEPOINT — the outer transaction stays rollbackable, so teardown
+    guarantees no state leaks to the next test regardless of what the
+    test committed (D-06 + SQLAlchemy async "joining a transaction"
+    recipe).
     """
-    factory = async_sessionmaker(
-        _migrated_engine,
-        expire_on_commit=False,
-        class_=AsyncSession,
-    )
-    async with factory() as sess:  # noqa: SIM117
-        async with sess.begin():
+    async with _migrated_engine.connect() as conn:
+        outer = await conn.begin()
+        factory = async_sessionmaker(
+            bind=conn,
+            expire_on_commit=False,
+            class_=AsyncSession,
+            join_transaction_mode="create_savepoint",
+        )
+        async with factory() as sess:
             yield sess
-            await sess.rollback()
+        await outer.rollback()
