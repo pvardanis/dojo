@@ -1,0 +1,41 @@
+# ABOUTME: Pre-commit hooks. Mirrors make check on staged files.
+# ABOUTME: Hook order matters (M10): format → lint --fix → ty → docs → unit tests.
+
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-format
+        name: ruff format
+        entry: uv run ruff format
+        language: system
+        types: [python]
+        pass_filenames: true
+
+      - id: ruff-check
+        name: ruff check (with --fix)
+        entry: uv run ruff check --fix
+        language: system
+        types: [python]
+        pass_filenames: true
+
+      - id: ty
+        name: ty typecheck
+        entry: uv run ty check app
+        language: system
+        types: [python]
+        pass_filenames: false
+
+      - id: interrogate
+        name: interrogate docstring coverage
+        entry: uv run interrogate -c pyproject.toml app
+        language: system
+        types: [python]
+        pass_filenames: false
+
+      - id: pytest-unit
+        name: pytest (unit only, fast)
+        entry: uv run pytest tests/unit/ -x --ff
+        language: system
+        types: [python]
+        pass_filenames: false
+        stages: [pre-commit]
