@@ -23,7 +23,7 @@ generic "polish" bucket.
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Project Scaffold & Tooling** - Boring-but-correct Python project foundation: uv, ruff, ty, interrogate, pytest-asyncio, async Alembic, pre-commit, GitHub Actions CI, structlog, settings
+- [x] **Phase 1: Project Scaffold & Tooling** (completed 2026-04-21) - Boring-but-correct Python project foundation: uv, ruff, ty, interrogate, pytest-asyncio, async Alembic, pre-commit, GitHub Actions CI, structlog, settings
 - [ ] **Phase 2: Domain & Application Spine** - Pure domain entities, application ports (incl. DraftStore Protocol), DTOs, and GenerateFromSource use case (TOPIC kind) driven end-to-end by hand-written fakes
 - [ ] **Phase 3: Infrastructure Adapters** - Real adapters behind every port: SQLAlchemy repos with mappers, Anthropic provider with tenacity retries and DTO validation, InMemoryDraftStore with TTL + lock, FILE reader, URL fetcher with paywall guards
 - [ ] **Phase 4: Generate → Review → Save Flow** - FastAPI skeleton + lifespan + deps.py wired to real infra; Generate/Review/Save routes for FILE, URL, and TOPIC sources with atomic persistence
@@ -52,7 +52,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   - [x] 01-03-database-alembic-PLAN.md — async SQLAlchemy session.py + async Alembic env.py + empty initial revision
   - [x] 01-04-web-routes-PLAN.md — app/main.py composition root + home/health routes + Jinja templates
   - [x] 01-05-test-infrastructure-PLAN.md — tests/conftest.py async fixtures + 4 Phase 1 tests (db_smoke, home, logging_smoke, settings)
-  - [ ] 01-06-tooling-ci-PLAN.md — Makefile + .pre-commit-config.yaml + .github/workflows/ci.yml
+  - [x] 01-06-tooling-ci-PLAN.md — Makefile + .pre-commit-config.yaml + .github/workflows/ci.yml
 
 ### Phase 2: Domain & Application Spine
 **Goal**: The pure inner core of the app — domain entities, value objects, domain exceptions, application ports (Protocols + Callable aliases, including the DraftStore Protocol), Pydantic DTOs, and the GenerateFromSource use case for the TOPIC kind — exists and is fully driven by hand-written fakes at every DIP boundary, so the port shapes are locked before any adapter is written.
