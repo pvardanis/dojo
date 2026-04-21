@@ -104,6 +104,37 @@ No project skills found. Add skills to `.claude/skills/<name>/SKILL.md`
 if domain-specific guidance emerges during implementation.
 <!-- GSD:skills-end -->
 
+## PR Shape
+
+**Every change to `main` goes through a pull request.** No direct
+pushes, regardless of category (code / docs / tooling / rebrand /
+housekeeping). Enforced by GitHub branch protection on `origin/main` —
+`git push origin main` will fail; the path is branch → push → PR →
+merge.
+
+**During phase execution: one PR per plan, not per phase.**
+- Branch name: `phase-{X}-plan-{YY}-{slug}`
+  (e.g. `phase-02-plan-01-domain-entities`)
+- Scope: the commits for that plan + its `SUMMARY.md`
+- Open the PR when the plan's `SUMMARY.md` is committed
+- Wait for CI + merge before starting the next plan
+- **Exception**: if two plans in the same wave can only ship together
+  (tight coupling that would break CI mid-wave), bundle them into one
+  PR and name the branch `phase-{X}-wave-{N}-{slug}`
+
+**Outside phase execution** (docs updates, one-off fixes, rebrand,
+housekeeping): per-topic PRs.
+- Branch name: `topic/{slug}` or `chore/{slug}` or `fix/{slug}`
+- One coherent change per PR
+- Same rule: no direct pushes regardless of how trivial the change
+  seems
+
+**Rationale**: Dojo is public + showcase. PRs 200-400 LOC are the
+review sweet spot; 2000+ LOC bundles (like Phase 1) get rubber-stamped
+in practice. Per-plan granularity lands most plans at 70-300 LOC of
+real code. Every PR also triggers CI, forces a "why" in the PR body,
+and gives a rollback handle — direct pushes skip all of that.
+
 <!-- GSD:workflow-start source:GSD defaults -->
 ## GSD Workflow Enforcement
 
