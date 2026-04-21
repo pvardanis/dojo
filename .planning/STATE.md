@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 1 Wave 3 complete (01-03 + 01-04 inline)
-last_updated: "2026-04-21T08:34:00.000Z"
-last_activity: 2026-04-21 -- Phase 1 Wave 3 complete (01-03 db/alembic, 01-04 web/routes)
+stopped_at: Phase 1 Wave 4 complete (01-05 merged)
+last_updated: "2026-04-21T08:50:00.000Z"
+last_activity: 2026-04-21 -- Phase 1 Wave 4 complete (01-05 test-infrastructure, 7 tests green)
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 6
-  completed_plans: 4
-  percent: 57
+  completed_plans: 5
+  percent: 71
 ---
 
 # Project State
@@ -26,8 +26,8 @@ See: .planning/PROJECT.md (updated 2026-04-18)
 ## Current Position
 
 Phase: 1 of 7 (Project Scaffold & Tooling)
-Plan: 4 of 6 complete (01-03 db/alembic, 01-04 web/routes)
-Status: Wave 4 ready (01-05 test-infrastructure)
+Plan: 5 of 6 complete (01-05 test-infrastructure — 7 tests, SC#2/3/4 green)
+Status: Wave 5 ready (01-06 tooling-ci, autonomous:false → checkpoint)
 Last activity: 2026-04-20 -- Phase 1 planning complete
 
 Progress: [░░░░░░░░░░] 0%

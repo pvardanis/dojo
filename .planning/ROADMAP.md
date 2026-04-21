@@ -51,7 +51,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   - [x] 01-02-settings-logging-PLAN.md — app/settings.py (pydantic-settings + SecretStr) + app/logging_config.py (structlog)
   - [x] 01-03-database-alembic-PLAN.md — async SQLAlchemy session.py + async Alembic env.py + empty initial revision
   - [x] 01-04-web-routes-PLAN.md — app/main.py composition root + home/health routes + Jinja templates
-  - [ ] 01-05-test-infrastructure-PLAN.md — tests/conftest.py async fixtures + 4 Phase 1 tests (db_smoke, home, logging_smoke, settings)
+  - [x] 01-05-test-infrastructure-PLAN.md — tests/conftest.py async fixtures + 4 Phase 1 tests (db_smoke, home, logging_smoke, settings)
   - [ ] 01-06-tooling-ci-PLAN.md — Makefile + .pre-commit-config.yaml + .github/workflows/ci.yml
 
 ### Phase 2: Domain & Application Spine
