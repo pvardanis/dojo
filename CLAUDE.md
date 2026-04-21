@@ -22,18 +22,20 @@ for the full target list once Plan 01-06 lands.
 <!-- GSD:stack-start source:STACK.md -->
 ## Technology Stack
 
-Python 3.12, async throughout. See `.planning/research/STACK.md` for
-version pins and known issues.
+Python 3.12, async at the web tier, sync at the DB layer. See
+`.planning/research/STACK.md` for version pins and known issues.
 
 - **Web**: FastAPI (async) + Jinja2 + HTMX + Pico.css
-- **DB**: SQLAlchemy 2.0 async + aiosqlite + Alembic (async migrations)
+- **DB**: SQLAlchemy 2.0 (sync) + SQLite (stdlib sqlite3) +
+  Alembic (sync migrations)
 - **LLM**: `anthropic` SDK, `tenacity` for retries
-- **Content**: `trafilatura` + `httpx` (URL extraction),
+- **Content**: `trafilatura` + `httpx` (async URL extraction),
   `markdown-it-py` + `nh3` (markdown → sanitized HTML)
 - **Config**: `pydantic-settings` (loads `ANTHROPIC_API_KEY` from `.env`)
-- **Logging**: `structlog`
+- **Logging**: `structlog` (wraps stdlib logging)
 - **Dev**: `uv`, `ruff` (79-char), `ty` (Astral), `interrogate` (100%)
-- **Tests**: `pytest`, `pytest-asyncio`, `respx`, Playwright (E2E)
+- **Tests**: `pytest`, `pytest-asyncio` (route tests only), `respx`,
+  Playwright (E2E)
 <!-- GSD:stack-end -->
 
 <!-- GSD:conventions-start source:CONVENTIONS.md -->

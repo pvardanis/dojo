@@ -8,9 +8,9 @@ studyable notes and Q&A cards, then drills those cards with a
 dating-app-style interaction (arrow keys or on-screen buttons).
 
 Built as both a study tool and a build exercise: design decisions favor
-interview-relevant patterns (DDD layering, DIP, async SQLAlchemy,
-structured LLM output) over shortcuts that would ship faster but teach
-less.
+interview-relevant patterns (DDD layering, DIP, FastAPI async + sync
+DB via threadpool, structured LLM output) over shortcuts that would
+ship faster but teach less.
 
 ---
 
@@ -205,7 +205,7 @@ dojo/
 │   │
 │   ├── infrastructure/
 │   │   ├── db/
-│   │   │   ├── models.py    # async SQLAlchemy 2.0 ORM
+│   │   │   ├── models.py    # SQLAlchemy 2.0 ORM (sync)
 │   │   │   ├── mappers.py   # ORM ↔ domain conversion
 │   │   │   └── session.py
 │   │   ├── repositories/
@@ -237,7 +237,7 @@ dojo/
 │       │   └── pico.min.css
 │       └── deps.py          # FastAPI Depends() for use-case injection
 │
-├── migrations/              # Alembic async migrations
+├── migrations/              # Alembic migrations (sync)
 │   ├── env.py
 │   └── versions/
 │
@@ -267,15 +267,15 @@ wiki (split if >150).
 | Web framework | FastAPI (async) | MLOps standard, async-native |
 | Templating | Jinja2 + HTMX | Server-rendered; HTMX removes JS framework overhead |
 | CSS | Pico.css | Classless, zero-build, decent defaults |
-| DB | SQLAlchemy 2.0 async + aiosqlite | Async is the learning goal per §1 |
-| Migrations | Alembic (async) | Standard, pairs with SQLAlchemy |
+| DB | SQLAlchemy 2.0 (sync) + SQLite | Single-user local-first workload — async buys nothing over threadpool; reversed from async in Phase 1 review |
+| Migrations | Alembic (sync) | Stock template; pairs with sync SQLAlchemy |
 | Config | pydantic-settings | Typed env loading |
 | LLM SDK | `anthropic` | Structured output via tool use |
 | Markdown render | `markdown-it-py` | Note rendering in Read view |
 | URL extraction | `trafilatura` | Strips nav/ads, extracts main content |
 | HTTP client | `httpx` (async) | Native async, paired with trafilatura |
 | Dev tooling | `uv`, `ruff` (79-char), `ty` (astral), `interrogate` (100%) | Per python-project-setup wiki |
-| Test | `pytest`, `pytest-asyncio`, `respx` | Async tests, deterministic HTTP stubs |
+| Test | `pytest`, `pytest-asyncio` (route tests), `respx` | Async tests at the FastAPI route layer; sync at the DB layer |
 | E2E | `playwright` | Browser-driven for drill flows |
 | Pre-commit | `pre-commit` | Runs the same checks as `make check` |
 
@@ -342,7 +342,7 @@ sequenceDiagram
 single-user local app. Avoids orphan DB rows if the user closes the tab
 mid-review.
 
-**Atomic save**: Source + Note + Cards in one async transaction. If any
+**Atomic save**: Source + Note + Cards in one transaction. If any
 fails, all roll back.
 
 ### 5.2 Drill
@@ -459,7 +459,7 @@ behavior-testing), test output pristine.
 ### 7.1 Unit tests (`tests/unit/`)
 
 - **Domain** — entity invariants, value-object validation, pure logic.
-  Zero I/O, zero async. Fastest tier.
+  Zero I/O. Fastest tier.
 - **Application** — each use case tested by wiring **hand-written
   fakes**: `FakeLLMProvider`, `FakeCardRepository`, etc. Fakes
   implement the Protocol/Callable and record calls in assertable form
@@ -469,9 +469,9 @@ behavior-testing), test output pristine.
 
 ### 7.2 Integration tests (`tests/integration/`)
 
-- **Repositories** — real async SQLite in a tmp file fixture. Each test
-  applies migrations, runs, cleans up. Verifies SQL actually works and
-  mappers round-trip across a real session.
+- **Repositories** — real SQLite in a tmp file fixture (sync session
+  via SAVEPOINT rollback). Each test applies migrations, runs, cleans
+  up. Verifies SQL actually works and mappers round-trip.
 - **File reader** — real filesystem, tmp paths.
 - **URL fetcher** — real `httpx` + `trafilatura` logic against
   `respx`-stubbed HTTP. Deterministic but exercises the real parsing.
@@ -571,7 +571,7 @@ sessions don't have to re-litigate.
 | --- | --- |
 | Name: Dojo | Training-ground metaphor; short; non-Twin-Peaks so it doesn't overlap with Black Lodge knowledge base |
 | Stack: Python + FastAPI + HTMX + Pico | Python matches the primary MLOps language, exercises real service patterns without drowning in frontend work |
-| Async SQLAlchemy | Learning goal — async patterns are interview-relevant for MLOps backends |
+| Sync SQLAlchemy (reversed from async) | Async-throughout was overkill for a single-user SQLite app; async remains at the web tier (FastAPI, httpx, LLM client) — sufficient async surface for MLOps interview-relevance without the threadpool tax |
 | Pico.css | Zero-build; UI is not a focus for MVP |
 | API key via env + `.env` via pydantic-settings | Industry-standard, keeps secrets out of domain/app layers; swap to OS keychain later if desired |
 | One LLM provider in MVP, port abstraction built in | Abstractions built without a second implementation often leak; design carefully but ship one concrete |
