@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: phase-complete
-stopped_at: Phase 1 complete (all 6 plans + review-fix cycle + phase docs)
-last_updated: "2026-04-21T10:36:00.000Z"
-last_activity: 2026-04-21 -- Phase 1 complete (10 tests green, 89% coverage, SC#6 deferred)
+status: context-gathered
+stopped_at: Phase 2 context gathered (4 gray areas, 12 decisions locked)
+last_updated: "2026-04-22T22:52:00.000Z"
+last_activity: 2026-04-22 -- Phase 2 context gathered; ready for research + planning
 progress:
   total_phases: 7
   completed_phases: 1
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-18)
 
 **Core value:** Generate Q&A cards from user-supplied source material, drill them interactively, retain knowledge. The generate → drill → learn loop must work even if everything else fails.
-**Current focus:** Phase 2 — Domain & Application Spine (ready to start)
+**Current focus:** Phase 2 — Domain & Application Spine (context gathered, research + plan next)
 
 ## Current Position
 
-Phase: 1 of 7 COMPLETE → Phase 2 ready
-Plan: 6 of 6 Phase-1 plans complete (all SUMMARYs + phase SUMMARY + LEARNINGS written)
-Status: Phase 1 done; SC#6 (CI green on push) deferred until GitHub remote exists
-Last activity: 2026-04-21 -- Phase 1 closed (10 tests, 89% coverage, 7/8 SCs green)
+Phase: 2 of 7 — context gathered (pre-planning)
+Plan: 0 of TBD — plans not yet drafted
+Status: Phase 2 CONTEXT.md written; 12 decisions locked across 4 gray areas (Typed IDs, DraftStore port, GenerateFromSource shape, TEST-03 + boundary lint)
+Last activity: 2026-04-22 -- Phase 2 context gathered; branch phase-02-planning
 
 Progress: [█░░░░░░░░░] 14%
 
@@ -91,6 +91,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-04-20T13:18:09.853Z
-Stopped at: Phase 1 context gathered
-Resume file: .planning/phases/01-project-scaffold-tooling/01-CONTEXT.md
+Last session: 2026-04-22T22:52:00.000Z
+Stopped at: Phase 2 context gathered
+Resume file: .planning/phases/02-domain-application-spine/02-CONTEXT.md
