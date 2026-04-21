@@ -1,8 +1,8 @@
 # ABOUTME: Dojo dev workflow. `make check` is the CI contract.
-# ABOUTME: Spec §8.1 9 targets + test-flakes (SC #4 gate).
+# ABOUTME: Spec §8.1 9 targets + test-flakes (SC #4 gate) + clean.
 
 .PHONY: install format lint typecheck docstrings test check run \
-        migrate test-flakes
+        migrate test-flakes clean
 
 install:
 	uv sync
@@ -33,3 +33,9 @@ migrate:
 
 test-flakes:
 	uv run pytest tests/integration/test_db_smoke.py --count=10
+
+clean:
+	find . -type f -name "*.pyc" -delete
+	find . -type d -name __pycache__ -exec rm -rf {} +
+	rm -rf .pytest_cache .ruff_cache .coverage htmlcov
+	rm -f dojo.db dojo.db-wal dojo.db-shm dojo.db-journal
