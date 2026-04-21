@@ -74,4 +74,31 @@ captured: 2026-04-21
 - **`alembic` logger INFO for integration tests:** currently clamped to WARNING; Phase 3 may want the upgrade breadcrumb back.
 
 ---
+
+## Addendum (2026-04-21 — post-phase reversal)
+
+### 14. Async-throughout was overkill; reversed to sync DB after phase close
+**What happened:** Phase 1 shipped async SQLAlchemy + aiosqlite + async Alembic + pytest-asyncio for DB tests, per the spec's "async throughout" posture and "async SQLAlchemy is a learning goal" Key Decision. After Phase 1 closure, Danny called it — for a local-first single-user SQLite study app, async buys nothing over FastAPI's default threadpool, and the complexity tax is real (`asyncio.to_thread(command.upgrade)` for Alembic, `async_engine_from_config` in env.py, event-loop-policy fixtures, `structlog.configure_once` RuntimeWarning under filterwarnings=error).
+
+**Reversal shape (commits `ec63ff4` + `27dff80`):**
+- `app/infrastructure/db/session.py` → sync `create_engine` + `Session` + `sessionmaker` (PRAGMA listener simplified: `engine` directly, no `engine.sync_engine`).
+- `migrations/env.py` → stock sync Alembic template (`engine_from_config` + `run_migrations_online`).
+- `tests/conftest.py` → sync SAVEPOINT session fixture; drop `asyncio.to_thread(command.upgrade)` wrap. `event_loop_policy` fixture kept for FastAPI route tests (`test_home`, `test_main_lifespan`).
+- `tests/integration/test_{db_smoke,alembic_smoke,sqlite_pragmas}.py` → all sync; no `pytest.mark.asyncio`.
+- `app/settings.py` → default `database_url = "sqlite:///dojo.db"`; scheme validator accepts `sqlite://`, `postgresql://`, `postgresql+psycopg(2)://`.
+- `pyproject.toml` → drop `aiosqlite`, drop `sqlalchemy[asyncio]` extra; `pytest-asyncio` stays for route tests.
+- Docs (`CLAUDE.md`, `.planning/PROJECT.md`, `docs/superpowers/specs/2026-04-18-dojo-design.md`): "async SQLAlchemy" → "sync SQLAlchemy + FastAPI async web tier".
+
+**Verification post-reversal:** 10/10 tests pass, 91% coverage (up from 89% — less dead async code to skip), SC#4 10x green. FastAPI async routes + async httpx + async LLM client still live — enough async surface for MLOps interview-relevance without the threadpool tax.
+
+**What stays async:** FastAPI route handlers; `httpx.AsyncClient` for URL fetching; the Anthropic SDK client; pytest-asyncio for route + lifespan tests. All legitimate I/O-concurrent surfaces.
+
+**Takeaway:** "Async throughout" is a vague posture that should be decomposed per layer. For a single-user local-first app, async at the web tier + sync at the DB tier is strictly better than async DB + threadpool — no performance cost, much simpler testing, less library surface (no aiosqlite, no async Alembic template, no asyncio.to_thread wrapping).
+
+**Cost of the reversal:** ~30 minutes of atomic commits. Zero regressions. LEARNINGS.md preserves the original decision + the reversal rationale as a decision trail.
+
+**Also removed:** the `filter_by_level` structlog processor stdlib-integration notes (#6 + #8) are still correct; they're unrelated to the DB change. The "pytest-asyncio event-loop flake" premise of the SC#4 gate (#2 in the base LEARNINGS) is now moot for DB tests — SC#4 remains as a generic stability smoke gate, not a flake-canary.
+
+---
 *Captured: 2026-04-21*
+*Addendum: 2026-04-21 — post-phase async→sync reversal*
