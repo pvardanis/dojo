@@ -19,6 +19,11 @@ class Base(DeclarativeBase):
     """Declarative base for all ORM models (populated in Phase 3)."""
 
 
+# Module-level engine: DATABASE_URL is resolved at import time via the
+# cached get_settings() singleton. Callers that need a different URL
+# must set DATABASE_URL (or mutate settings) and clear the cache BEFORE
+# importing this module — otherwise the engine binds to whatever value
+# get_settings() saw on its first call (typically the default).
 _settings = get_settings()
 
 engine = create_async_engine(
