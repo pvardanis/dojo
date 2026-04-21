@@ -4,25 +4,33 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+
 import pytest
 
 from app.settings import Settings, get_settings
 
 
+@pytest.fixture(autouse=True)
+def _clear_settings_cache() -> Iterator[None]:
+    """Clear the `get_settings` lru_cache before AND after every test.
+
+    Without this, a cached Settings from an earlier test (or from the
+    session-scoped `_db_env`-era fixtures) leaks into the next test
+    and the monkeypatched env vars appear to do nothing.
+    """
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
+
+
 def test_anthropic_key_loaded_from_env(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """`ANTHROPIC_API_KEY` env var takes precedence over default.
-
-    MUST call `get_settings.cache_clear()` before `get_settings()` —
-    `lru_cache` otherwise returns a previously-cached Settings and
-    the monkeypatch has no effect.
-    """
+    """`ANTHROPIC_API_KEY` env var takes precedence over default."""
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
-    get_settings.cache_clear()
     settings = get_settings()
     assert settings.anthropic_api_key.get_secret_value() == "sk-ant-test"
-    get_settings.cache_clear()
 
 
 def test_defaults_are_present_when_env_empty(

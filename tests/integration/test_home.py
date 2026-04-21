@@ -13,7 +13,13 @@ from app.main import app
 
 @pytest.mark.asyncio
 async def test_home_route_returns_200_html() -> None:
-    """GET / returns 200 with Dojo-titled HTML."""
+    """GET / returns 200 with the rendered home template.
+
+    Assertions target template-specific markers (the <h1> heading and
+    the base template's <main> landmark) rather than a bare "Dojo"
+    substring — an error page or a stub containing the word "Dojo"
+    anywhere must not false-pass.
+    """
     async with httpx.AsyncClient(
         transport=ASGITransport(app=app),
         base_url="http://test",
@@ -21,7 +27,8 @@ async def test_home_route_returns_200_html() -> None:
         response = await client.get("/")
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
-    assert "Dojo" in response.text
+    assert "<h1>Dojo</h1>" in response.text
+    assert "<main>" in response.text
 
 
 @pytest.mark.asyncio

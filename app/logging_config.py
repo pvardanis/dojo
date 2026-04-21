@@ -35,13 +35,19 @@ def configure_logging(log_level: str = "INFO") -> None:
     else:
         processors.append(structlog.dev.ConsoleRenderer())
 
-    structlog.configure_once(
-        processors=processors,
-        wrapper_class=structlog.stdlib.BoundLogger,
-        context_class=dict,
-        logger_factory=structlog.stdlib.LoggerFactory(),
-        cache_logger_on_first_use=True,
-    )
+    # Idempotent configure without the RuntimeWarning that
+    # structlog.configure_once() emits — under filterwarnings=error
+    # that warning escalates to a test failure when anything calls
+    # configure_logging a second time in the same process (e.g. the
+    # lifespan smoke test after test_logging_smoke runs).
+    if not structlog.is_configured():
+        structlog.configure(
+            processors=processors,
+            wrapper_class=structlog.stdlib.BoundLogger,
+            context_class=dict,
+            logger_factory=structlog.stdlib.LoggerFactory(),
+            cache_logger_on_first_use=True,
+        )
 
 
 def get_logger(name: str) -> Any:
