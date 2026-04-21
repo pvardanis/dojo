@@ -60,7 +60,26 @@ def _clamp_third_party_loggers() -> None:
 
 
 @pytest.fixture(scope="session")
-def _alembic_cfg(test_db_url: str) -> AlembicConfig:
+def _db_env(test_db_url: str) -> AsyncIterator[None]:
+    """Point `DATABASE_URL` at the tmp DB for the whole session.
+
+    env.py reads the URL via `get_settings().database_url`, and
+    `get_settings` is `@lru_cache`'d — so we set the env var AND
+    clear the cache before any migration or engine creation.
+    Without this, env.py migrates the default `dojo.db` instead of
+    the tmp DB, silently diverging from the session/engine fixtures.
+    """
+    from app.settings import get_settings
+
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setenv("DATABASE_URL", test_db_url)
+        get_settings.cache_clear()
+        yield
+    get_settings.cache_clear()
+
+
+@pytest.fixture(scope="session")
+def _alembic_cfg(test_db_url: str, _db_env: None) -> AlembicConfig:
     """Build an Alembic Config that points at the tmp DB."""
     cfg = AlembicConfig("alembic.ini")
     cfg.set_main_option("sqlalchemy.url", test_db_url)

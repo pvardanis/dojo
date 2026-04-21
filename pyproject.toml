@@ -29,6 +29,7 @@ dev = [
     "pytest-asyncio>=1.0",     # 1.0+ removed deprecated event_loop
     "pytest-cov>=5.0",
     "pytest-repeat>=0.9.4",    # For SC #4's 10x flake check
+    "httpx>=0.28",             # ASGITransport client for integration tests
     "pre-commit>=3.7",
 ]
 
