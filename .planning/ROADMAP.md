@@ -2,7 +2,7 @@
 
 ## Overview
 
-Dojo ships a local MLOps interview-prep study app whose core loop is
+Dojo ships a local tech interview-prep study app whose core loop is
 generate → review → drill → learn. The roadmap is ordered spine-first
 bottom-up per ARCHITECTURE.md §6: a grounded tooling scaffold, then the
 pure domain + application spine against fakes, then the infrastructure

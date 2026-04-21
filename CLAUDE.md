@@ -3,7 +3,7 @@
 <!-- GSD:project-start source:PROJECT.md -->
 ## Project
 
-Dojo is a local-first MLOps interview-prep study app. It turns source
+Dojo is a local-first tech interview-prep study app. It turns source
 material (local markdown/text files, URLs, or topic prompts) into
 studyable notes and Q&A cards using Anthropic Claude, then drills those
 cards with a Bumble/Tinder-style swipe UX (arrow keys or on-screen

@@ -2,7 +2,7 @@
 
 **Design spec · 2026-04-18**
 
-A local web app for MLOps interview prep. It turns source material
+A local web app for tech interview prep. It turns source material
 (Black Lodge wiki docs, URLs, raw text, or just a topic prompt) into
 studyable notes and Q&A cards, then drills those cards with a
 dating-app-style interaction (arrow keys or on-screen buttons).
@@ -264,7 +264,7 @@ wiki (split if >150).
 
 | Concern | Library | Rationale |
 | --- | --- | --- |
-| Web framework | FastAPI (async) | MLOps standard, async-native |
+| Web framework | FastAPI (async) | Modern async-native Python web framework; ubiquitous in backend interviews |
 | Templating | Jinja2 + HTMX | Server-rendered; HTMX removes JS framework overhead |
 | CSS | Pico.css | Classless, zero-build, decent defaults |
 | DB | SQLAlchemy 2.0 (sync) + SQLite | Single-user local-first workload — async buys nothing over threadpool; reversed from async in Phase 1 review |
@@ -570,8 +570,8 @@ sessions don't have to re-litigate.
 | Decision | Rationale |
 | --- | --- |
 | Name: Dojo | Training-ground metaphor; short; non-Twin-Peaks so it doesn't overlap with Black Lodge knowledge base |
-| Stack: Python + FastAPI + HTMX + Pico | Python matches the primary MLOps language, exercises real service patterns without drowning in frontend work |
-| Sync SQLAlchemy (reversed from async) | Async-throughout was overkill for a single-user SQLite app; async remains at the web tier (FastAPI, httpx, LLM client) — sufficient async surface for MLOps interview-relevance without the threadpool tax |
+| Stack: Python + FastAPI + HTMX + Pico | Python is ubiquitous in backend/infrastructure/AI interviews; exercises real service patterns without drowning in frontend work |
+| Sync SQLAlchemy (reversed from async) | Async-throughout was overkill for a single-user SQLite app; async remains at the web tier (FastAPI, httpx, LLM client) — sufficient async surface for interview-relevance without the threadpool tax |
 | Pico.css | Zero-build; UI is not a focus for MVP |
 | API key via env + `.env` via pydantic-settings | Industry-standard, keeps secrets out of domain/app layers; swap to OS keychain later if desired |
 | One LLM provider in MVP, port abstraction built in | Abstractions built without a second implementation often leak; design carefully but ship one concrete |
@@ -661,8 +661,9 @@ Listed so they don't reappear as "did we forget?" later.
   sufficient.
 - **No structured test data fixtures beyond what each test needs.** No
   faker, no factories. Each test builds its own minimal data.
-- **No observability beyond standard Python logging.** Real MLOps apps
-  need metrics + traces; that's a future project, not Dojo.
+- **No observability beyond standard Python logging.** Production web
+  services typically need metrics + traces (Prometheus / OTel);
+  Dojo is a local single-user study app and doesn't.
 
 ---
 

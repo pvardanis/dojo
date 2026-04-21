@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A local web app for MLOps interview prep. It turns source material
+A local web app for tech interview prep. It turns source material
 (Black Lodge wiki docs, URLs, raw text, or a topic prompt alone) into
 studyable notes and Q&A cards, then drills those cards with a
 dating-app-style swipe UX (arrow keys or on-screen buttons).
@@ -141,8 +141,8 @@ generate → drill → learn — must work.
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
 | Name: Dojo | Training-ground metaphor; short; non-Twin-Peaks so it doesn't overlap with Black Lodge knowledge base | — Pending |
-| Stack: Python + FastAPI + HTMX + Pico | Matches the primary MLOps language; exercises real service patterns without drowning in frontend work | — Pending |
-| Sync SQLAlchemy (reversed from async) | Originally async for learning-goal parity; Phase 1 review found it was overkill for a single-user SQLite app. Async stays at the web tier (FastAPI routes, httpx URL fetching, LLM client) — enough async surface for MLOps interview-relevance without the threadpool tax. | Reversed in Phase 1 |
+| Stack: Python + FastAPI + HTMX + Pico | Python is ubiquitous in backend/infrastructure/AI interviews; exercises real service patterns without drowning in frontend work | — Pending |
+| Sync SQLAlchemy (reversed from async) | Originally async for learning-goal parity; Phase 1 review found it was overkill for a single-user SQLite app. Async stays at the web tier (FastAPI routes, httpx URL fetching, LLM client) — enough async surface for interview-relevance without the threadpool tax. | Reversed in Phase 1 |
 | Pico.css (not Tailwind) | Classless, zero-build; UI is not a focus for MVP | — Pending |
 | API key via env + `.env` via pydantic-settings | Industry-standard; keeps secrets out of domain/app layers; swappable to OS keychain later | — Pending |
 | One LLM provider in MVP, port abstraction built in | Ship one concrete, design carefully; abstractions built without a second implementation often leak | — Pending |
@@ -159,7 +159,7 @@ generate → drill → learn — must work.
 | `structlog` for structured logging | Cheap to add up front; pays off in debugging and future observability; matches `python-project-setup.md` logging convention | — Pending |
 | `nh3` for HTML sanitization of LLM-generated markdown | Required whenever we render LLM output as HTML (Read mode, drill markdown); security flag, not a nice-to-have | — Pending |
 | Post-save card edit/delete in MVP | Table-stakes for flashcard apps; small code cost; avoids "why can't I fix my own cards" hole | — Pending |
-| Markdown in drill Q&A (not just plain text) | MLOps questions include code/YAML/commands; `markdown-it-py` already a dep for notes; `nh3` sanitizes | — Pending |
+| Markdown in drill Q&A (not just plain text) | Technical questions include code / YAML / SQL / shell commands; `markdown-it-py` already a dep for notes; `nh3` sanitizes | — Pending |
 | Session size cap on drill start | Prevents overwhelming 100+ card sessions; simple dropdown; aligns with daily-study UX | — Pending |
 
 ## Evolution
