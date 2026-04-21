@@ -15,9 +15,15 @@ from app.settings import get_settings
 
 config = context.config
 
-# Override the static URL in alembic.ini with the pydantic-settings
-# value — single source of truth for DATABASE_URL (D-01).
-config.set_main_option("sqlalchemy.url", get_settings().database_url)
+# Fill the static URL in alembic.ini from pydantic-settings only when the
+# caller hasn't provided one. Programmatic callers (e.g. pytest fixtures)
+# that `cfg.set_main_option("sqlalchemy.url", ...)` before command.upgrade
+# want their URL to win; CLI callers see the ini placeholder and fall
+# through to the settings singleton (D-01 — settings is source of truth).
+_ALEMBIC_INI_PLACEHOLDER = "driver://user:pass@localhost/dbname"
+_current_url = config.get_main_option("sqlalchemy.url")
+if not _current_url or _current_url == _ALEMBIC_INI_PLACEHOLDER:
+    config.set_main_option("sqlalchemy.url", get_settings().database_url)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
