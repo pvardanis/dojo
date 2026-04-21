@@ -30,3 +30,6 @@ dojo.db-shm
 
 # macOS
 .DS_Store
+
+# Personal study notes — kept local, not on the showcase repo
+docs/study/
