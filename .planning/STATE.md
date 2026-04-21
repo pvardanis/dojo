@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Phase 1 context gathered
-last_updated: "2026-04-20T19:54:49.102Z"
-last_activity: 2026-04-20 -- Phase 1 planning complete
+status: phase-complete
+stopped_at: Phase 1 complete (all 6 plans + review-fix cycle + phase docs)
+last_updated: "2026-04-21T10:36:00.000Z"
+last_activity: 2026-04-21 -- Phase 1 complete (10 tests green, 89% coverage, SC#6 deferred)
 progress:
   total_phases: 7
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 6
-  completed_plans: 0
-  percent: 0
+  completed_plans: 6
+  percent: 14
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-18)
 
 **Core value:** Generate Q&A cards from user-supplied source material, drill them interactively, retain knowledge. The generate → drill → learn loop must work even if everything else fails.
-**Current focus:** Phase 1 — Project Scaffold & Tooling
+**Current focus:** Phase 2 — Domain & Application Spine (ready to start)
 
 ## Current Position
 
-Phase: 1 of 7 (Project Scaffold & Tooling)
-Plan: 0 of TBD in current phase
-Status: Ready to execute
-Last activity: 2026-04-20 -- Phase 1 planning complete
+Phase: 1 of 7 COMPLETE → Phase 2 ready
+Plan: 6 of 6 Phase-1 plans complete (all SUMMARYs + phase SUMMARY + LEARNINGS written)
+Status: Phase 1 done; SC#6 (CI green on push) deferred until GitHub remote exists
+Last activity: 2026-04-21 -- Phase 1 closed (10 tests, 89% coverage, 7/8 SCs green)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█░░░░░░░░░] 14%
 
 ## Performance Metrics
 

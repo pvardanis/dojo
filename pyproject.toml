@@ -1,0 +1,83 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "dojo"
+version = "0.1.0"
+description = "Local MLOps interview-prep study app."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi>=0.118",
+    "uvicorn[standard]>=0.30",
+    "jinja2>=3.1",
+    "python-multipart>=0.0.9",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.8",
+    "sqlalchemy>=2.0.38",
+    "alembic>=1.13",
+    "structlog>=24.4",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.8",
+    "ty==0.0.31",              # D-16: exact pin, still beta
+    "interrogate>=1.7",
+    "pytest>=8.3",
+    "pytest-asyncio>=1.0",     # 1.0+ removed deprecated event_loop
+    "pytest-cov>=5.0",
+    "pytest-repeat>=0.9.4",    # SC #4 10x smoke stability gate
+    "httpx>=0.28",             # ASGITransport client for integration tests
+    "pre-commit>=3.7",
+]
+
+[tool.uv]
+package = true                 # D-20: editable-install for Alembic
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.ruff]
+line-length = 79               # wiki: python-project-setup convention
+target-version = "py312"
+
+[tool.ruff.lint]
+# Conservative baseline; expand in Phase 2 when code volume grows.
+select = ["E", "F", "W", "I", "B", "UP", "SIM"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"                            # D-04
+asyncio_default_fixture_loop_scope = "session"   # pytest-asyncio 1.x
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "-ra",
+    "--cov=app",
+    "--cov-report=term-missing",
+]
+# Promote warnings to errors (pristine-output rule / TEST-02).
+# Add targeted ignores here as Phase 3+ libs need them.
+filterwarnings = ["error"]
+testpaths = ["tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["app"]
+
+[tool.interrogate]
+fail-under = 100                                 # D-15
+verbose = 2
+# D-15: do NOT add app/application/ports.py to `exclude`.
+exclude = ["migrations", "tests", "docs"]
+ignore-init-method = true
+ignore-init-module = true
+ignore-magic = true
+
+[tool.ty]
+# D-16: pin exact patch; review release notes on every bump.
+# Detailed rules TBD — start with defaults, tighten when Phase 2
+# introduces real code.

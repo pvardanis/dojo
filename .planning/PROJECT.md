@@ -91,7 +91,8 @@ generate → drill → learn — must work.
 
 - Built as both a study tool and a build exercise — design decisions
   favor interview-relevant patterns (DDD layering, DIP with
-  Protocols/Callables, async SQLAlchemy, structured LLM output) over
+  Protocols/Callables, FastAPI async + sync DB via threadpool,
+  structured LLM output) over
   shortcuts that ship faster but teach less.
 - Content spine comes from an existing Black Lodge knowledge base at
   `~/Documents/Black Lodge/knowledge-base/` — already contains wiki
@@ -114,9 +115,11 @@ generate → drill → learn — must work.
 
 ## Constraints
 
-- **Tech stack**: Python 3.12, FastAPI (async), SQLAlchemy 2.0 async +
-  aiosqlite, Alembic, Jinja2 + HTMX, Pico.css, anthropic SDK,
+- **Tech stack**: Python 3.12, FastAPI (async), SQLAlchemy 2.0 (sync)
+  + SQLite, Alembic (sync), Jinja2 + HTMX, Pico.css, anthropic SDK,
   trafilatura, httpx, markdown-it-py — locked per spec §4.2.
+  DB layer intentionally sync: local-first single-user workload; the
+  async-throughout call was reversed in Phase 1 review as overkill.
 - **Dev tooling**: uv, ruff (79-char), ty (Astral), interrogate (100%),
   pytest + pytest-asyncio + respx, Playwright for E2E.
 - **Secrets**: `ANTHROPIC_API_KEY` via env var loaded by
@@ -139,7 +142,7 @@ generate → drill → learn — must work.
 |----------|-----------|---------|
 | Name: Dojo | Training-ground metaphor; short; non-Twin-Peaks so it doesn't overlap with Black Lodge knowledge base | — Pending |
 | Stack: Python + FastAPI + HTMX + Pico | Matches the primary MLOps language; exercises real service patterns without drowning in frontend work | — Pending |
-| Async SQLAlchemy | Learning goal — async patterns are interview-relevant for MLOps backends | — Pending |
+| Sync SQLAlchemy (reversed from async) | Originally async for learning-goal parity; Phase 1 review found it was overkill for a single-user SQLite app. Async stays at the web tier (FastAPI routes, httpx URL fetching, LLM client) — enough async surface for MLOps interview-relevance without the threadpool tax. | Reversed in Phase 1 |
 | Pico.css (not Tailwind) | Classless, zero-build; UI is not a focus for MVP | — Pending |
 | API key via env + `.env` via pydantic-settings | Industry-standard; keeps secrets out of domain/app layers; swappable to OS keychain later | — Pending |
 | One LLM provider in MVP, port abstraction built in | Ship one concrete, design carefully; abstractions built without a second implementation often leak | — Pending |

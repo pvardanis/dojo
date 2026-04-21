@@ -1,0 +1,38 @@
+# ABOUTME: CI — runs make check on push and PR against Python 3.12.
+# ABOUTME: Single job, uv-cached, cancels stale PR runs.
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # A7: Settings instantiation needs a value (pydantic-settings has
+      # a dev-placeholder default; this override is belt + braces for
+      # any code that calls `.get_secret_value()` in CI).
+      ANTHROPIC_API_KEY: ci-placeholder
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v8.1.0
+        with:
+          enable-cache: true
+          python-version: "3.12"
+          # setup-uv@v8 caches on **/uv.lock by default.
+
+      - name: make install
+        run: make install
+
+      - name: make check
+        run: make check
