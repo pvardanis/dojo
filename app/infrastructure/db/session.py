@@ -1,16 +1,11 @@
-# ABOUTME: Async SQLAlchemy engine + session factory.
+# ABOUTME: Sync SQLAlchemy engine + session factory.
 # ABOUTME: Dialect-guarded connection listener sets SQLite pragmas.
-"""Async SQLAlchemy engine + session factory for Dojo."""
+"""Sync SQLAlchemy engine + session factory for Dojo."""
 
 from __future__ import annotations
 
-from sqlalchemy import event
-from sqlalchemy.ext.asyncio import (
-    AsyncSession,
-    async_sessionmaker,
-    create_async_engine,
-)
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy import create_engine, event
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.settings import get_settings
 
@@ -26,20 +21,20 @@ class Base(DeclarativeBase):
 # get_settings() saw on its first call (typically the default).
 _settings = get_settings()
 
-engine = create_async_engine(
+engine = create_engine(
     _settings.database_url,
     echo=False,
     future=True,
 )
 
-AsyncSessionLocal: async_sessionmaker[AsyncSession] = async_sessionmaker(
+SessionLocal: sessionmaker[Session] = sessionmaker(
     engine,
-    expire_on_commit=False,  # C3 mitigation
-    class_=AsyncSession,
+    expire_on_commit=False,
+    class_=Session,
 )
 
 
-@event.listens_for(engine.sync_engine, "connect")
+@event.listens_for(engine, "connect")
 def _configure_sqlite(dbapi_conn, _):
     """Apply SQLite-only pragmas; no-op on other dialects."""
     if engine.dialect.name != "sqlite":

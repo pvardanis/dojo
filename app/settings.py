@@ -11,7 +11,12 @@ from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
-_ASYNC_DB_SCHEMES = ("sqlite+aiosqlite://", "postgresql+asyncpg://")
+_SUPPORTED_DB_SCHEMES = (
+    "sqlite://",
+    "postgresql://",
+    "postgresql+psycopg2://",
+    "postgresql+psycopg://",
+)
 
 
 class Settings(BaseSettings):
@@ -30,18 +35,18 @@ class Settings(BaseSettings):
     )
 
     anthropic_api_key: SecretStr = SecretStr("dev-placeholder")
-    database_url: str = "sqlite+aiosqlite:///dojo.db"
+    database_url: str = "sqlite:///dojo.db"
     log_level: LogLevel = "INFO"
     run_llm_tests: bool = False
 
     @field_validator("database_url")
     @classmethod
-    def _require_async_scheme(cls, v: str) -> str:
-        """Reject sync DB URLs — the infrastructure layer is async-only."""
-        if not v.startswith(_ASYNC_DB_SCHEMES):
+    def _require_supported_scheme(cls, v: str) -> str:
+        """Reject DB URLs for drivers we don't ship support for."""
+        if not v.startswith(_SUPPORTED_DB_SCHEMES):
             raise ValueError(
-                f"database_url must use an async scheme "
-                f"{_ASYNC_DB_SCHEMES}; got {v!r}"
+                f"database_url must use a supported scheme "
+                f"{_SUPPORTED_DB_SCHEMES}; got {v!r}"
             )
         return v
 

@@ -1,45 +1,39 @@
 # ABOUTME: Shared pytest fixtures for the whole test suite.
-# ABOUTME: Wires async event loop + tmp-file SQLite + real Alembic.
-"""Shared async fixtures for the Dojo test suite."""
+# ABOUTME: Wires tmp-file SQLite + real Alembic + SAVEPOINT session.
+"""Shared fixtures for the Dojo test suite."""
 
 from __future__ import annotations
 
 import asyncio
 import logging
-from collections.abc import AsyncIterator
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
-import pytest_asyncio
 from alembic import command
 from alembic.config import Config as AlembicConfig
-from sqlalchemy.ext.asyncio import (
-    AsyncSession,
-    async_sessionmaker,
-    create_async_engine,
-)
+from sqlalchemy import create_engine
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import Session, sessionmaker
 
 
 @pytest.fixture(scope="session")
 def event_loop_policy():
-    """Override pytest-asyncio default policy for the whole session.
+    """Override pytest-asyncio default policy for route tests.
 
-    Using the default asyncio policy explicitly makes the session's
-    event loop deterministic across platforms; pairs with
-    `asyncio_default_fixture_loop_scope = "session"` in pyproject.
+    FastAPI routes are still async; the event loop is only relevant for
+    tests under `tests/integration/test_home.py` and
+    `tests/integration/test_main_lifespan.py`. DB tests became sync in
+    the Phase 1 async → sync refactor; they do not use this fixture.
     """
     return asyncio.DefaultEventLoopPolicy()
 
 
 @pytest.fixture(scope="session")
 def test_db_url(tmp_path_factory) -> str:
-    """Tmp-file SQLite URL, shared across the session (not :memory:).
-
-    `:memory:` SQLite is per-connection in aiosqlite; a tmp file
-    lets the session-scoped engine survive across fixtures.
-    """
+    """Tmp-file SQLite URL, shared across the session."""
     path: Path = tmp_path_factory.mktemp("db") / "dojo.db"
-    return f"sqlite+aiosqlite:///{path}"
+    return f"sqlite:///{path}"
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -65,56 +59,50 @@ def _alembic_cfg(test_db_url: str) -> AlembicConfig:
 
     env.py respects a caller-set URL (the `driver://user:pass@...`
     placeholder is the only trigger for the settings fallback), so
-    setting it here is all that is needed — no DATABASE_URL env var
-    monkeypatch or get_settings.cache_clear gymnastics required.
+    setting it here is all that is needed.
     """
     cfg = AlembicConfig("alembic.ini")
     cfg.set_main_option("sqlalchemy.url", test_db_url)
     return cfg
 
 
-@pytest_asyncio.fixture(scope="session")
-async def _migrated_engine(
+@pytest.fixture(scope="session")
+def _migrated_engine(
     test_db_url: str, _alembic_cfg: AlembicConfig
-) -> AsyncIterator:
+) -> Iterator[Engine]:
     """Run alembic upgrade head once per session against tmp DB.
 
     Running the real migration (not Base.metadata.create_all)
-    exercises the async Alembic pipeline — defends against C4 drift.
-    Alembic's sync CLI is wrapped in `asyncio.to_thread` to keep its
-    event loop separate from pytest-asyncio's (New Pitfall 5).
+    exercises the Alembic pipeline — defends against schema drift.
     """
-    await asyncio.to_thread(command.upgrade, _alembic_cfg, "head")
+    command.upgrade(_alembic_cfg, "head")
 
-    engine = create_async_engine(test_db_url, future=True)
+    engine = create_engine(test_db_url, future=True)
     try:
         yield engine
     finally:
-        await engine.dispose()
+        engine.dispose()
 
 
-@pytest_asyncio.fixture
-async def session(
-    _migrated_engine,
-) -> AsyncIterator[AsyncSession]:
-    """Function-scoped async session with SAVEPOINT-based isolation.
+@pytest.fixture
+def session(_migrated_engine: Engine) -> Iterator[Session]:
+    """Function-scoped sync session with SAVEPOINT-based isolation.
 
     Opens an outer transaction on a dedicated connection and binds
     the session to it via `join_transaction_mode="create_savepoint"`.
     Any `sess.commit()` or `sess.begin()` inside a test closes a
     SAVEPOINT — the outer transaction stays rollbackable, so teardown
     guarantees no state leaks to the next test regardless of what the
-    test committed (D-06 + SQLAlchemy async "joining a transaction"
-    recipe).
+    test committed (D-06 + SQLAlchemy "joining a transaction" recipe).
     """
-    async with _migrated_engine.connect() as conn:
-        outer = await conn.begin()
-        factory = async_sessionmaker(
+    with _migrated_engine.connect() as conn:
+        outer = conn.begin()
+        factory = sessionmaker(
             bind=conn,
             expire_on_commit=False,
-            class_=AsyncSession,
+            class_=Session,
             join_transaction_mode="create_savepoint",
         )
-        async with factory() as sess:
+        with factory() as sess:
             yield sess
-        await outer.rollback()
+        outer.rollback()

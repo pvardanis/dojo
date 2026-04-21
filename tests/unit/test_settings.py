@@ -46,6 +46,6 @@ def test_defaults_are_present_when_env_empty(
     monkeypatch.delenv("LOG_LEVEL", raising=False)
     monkeypatch.delenv("RUN_LLM_TESTS", raising=False)
     settings = Settings(_env_file=None)  # type: ignore[call-arg]
-    assert settings.database_url == "sqlite+aiosqlite:///dojo.db"
+    assert settings.database_url == "sqlite:///dojo.db"
     assert settings.log_level == "INFO"
     assert settings.run_llm_tests is False

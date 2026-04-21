@@ -14,8 +14,7 @@ dependencies = [
     "python-multipart>=0.0.9",
     "pydantic>=2.9",
     "pydantic-settings>=2.8",
-    "sqlalchemy[asyncio]>=2.0.38",
-    "aiosqlite>=0.22.1",
+    "sqlalchemy>=2.0.38",
     "alembic>=1.13",
     "structlog>=24.4",
 ]
@@ -28,7 +27,7 @@ dev = [
     "pytest>=8.3",
     "pytest-asyncio>=1.0",     # 1.0+ removed deprecated event_loop
     "pytest-cov>=5.0",
-    "pytest-repeat>=0.9.4",    # For SC #4's 10x flake check
+    "pytest-repeat>=0.9.4",    # SC #4 10x smoke stability gate
     "httpx>=0.28",             # ASGITransport client for integration tests
     "pre-commit>=3.7",
 ]
