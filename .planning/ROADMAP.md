@@ -67,7 +67,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   6. `import-linter` (or equivalent) is configured so a test asserts that `app/domain/` and `app/application/` never import from `app/infrastructure/` or `app/web/`
 **Plans**: 5 plans
   - [x] 02-01-domain-entities-PLAN.md — Domain entities, value objects, typed IDs, DojoError (stdlib-only; TDD per entity)
-  - [ ] 02-02-application-ports-dtos-PLAN.md — 6 Protocol ports + 2 Callable aliases + DraftToken + Pydantic/dataclass DTOs + app exceptions
+  - [x] 02-02-application-ports-dtos-PLAN.md — 6 Protocol ports + 2 Callable aliases + DraftToken + Pydantic/dataclass DTOs + app exceptions
   - [ ] 02-03-hand-written-fakes-PLAN.md — Seven hand-written fakes under tests/fakes/ (structural subtyping, no Mock())
   - [ ] 02-04-generate-from-source-use-case-PLAN.md — GenerateFromSource use case (TOPIC wired; FILE/URL raise UnsupportedSourceKind)
   - [ ] 02-05-contract-harness-import-linter-PLAN.md — TEST-03 parametrised harness + import-linter DIP boundary enforcement
@@ -145,7 +145,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Project Scaffold & Tooling | 0/6 | Not started | - |
-| 2. Domain & Application Spine | 1/5 | In progress | - |
+| 2. Domain & Application Spine | 2/5 | In progress | - |
 | 3. Infrastructure Adapters | 0/TBD | Not started | - |
 | 4. Generate → Review → Save Flow | 0/TBD | Not started | - |
 | 5. Drill Mode | 0/TBD | Not started | - |

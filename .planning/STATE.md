@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 2 Wave 1 complete — plan 01 landed; ready to open PR
-last_updated: "2026-04-22T09:45:00.000Z"
-last_activity: 2026-04-22 -- Phase 2 Plan 01 (domain entities) complete on phase-02-plan-01-domain-entities
+stopped_at: Phase 2 Wave 2 (plans 02+03 parallel) — plan 02 landed; ready to open PR
+last_updated: "2026-04-22T10:52:53.000Z"
+last_activity: 2026-04-22 -- Phase 2 Plan 02 (application ports & DTOs) complete on phase-02-plan-02-application-ports-dtos
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 6
-  completed_plans: 7
-  percent: 16
+  completed_plans: 8
+  percent: 18
 ---
 
 # Project State
@@ -21,35 +21,35 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-18)
 
 **Core value:** Generate Q&A cards from user-supplied source material, drill them interactively, retain knowledge. The generate → drill → learn loop must work even if everything else fails.
-**Current focus:** Phase 2 — Domain & Application Spine (planned, ready to execute)
+**Current focus:** Phase 2 — Domain & Application Spine (executing, Wave 2)
 
 ## Current Position
 
 Phase: 2 of 7 — executing
-Plan: 1 of 5 complete — domain entities landed on branch phase-02-plan-01-domain-entities; awaiting PR merge before Plan 02 begins
-Status: Plan 02-01 delivered 4 frozen dataclasses + 2 enums + 4 NewType IDs + DojoError base; 22/22 domain unit tests green; make check clean; stdlib-only verified.
-Last activity: 2026-04-22 -- Plan 02-01 complete; SUMMARY.md + STATE + ROADMAP updated
+Plan: 2 of 5 complete — application ports + DTOs + exceptions landed on branch phase-02-plan-02-application-ports-dtos; awaiting PR merge before Plan 03 begins
+Status: Plan 02-02 delivered 6 typing.Protocol ports + 2 PEP 695 Callable aliases + DraftToken NewType + NoteDTO/CardDTO/GeneratedContent Pydantic DTOs + 3 stdlib frozen use-case dataclasses + 3 DojoError-derived app exceptions. 22/22 new application unit tests green (55/55 overall); make check clean; inward-only imports verified.
+Last activity: 2026-04-22 -- Plan 02-02 complete; SUMMARY.md + STATE + ROADMAP updated
 
-Progress: [█▒░░░░░░░░] 16%
+Progress: [██░░░░░░░░] 18%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 7 (6 Phase 1 + 1 Phase 2)
-- Average duration: ~25 min (Plan 02-01)
-- Total execution time: ~25 min (Phase 2 portion)
+- Total plans completed: 8 (6 Phase 1 + 2 Phase 2)
+- Average duration: ~15 min (Phase 2 portion)
+- Total execution time: ~30 min (Phase 2 portion)
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 2     | 1     | ~25m  | ~25 min  |
+| 2     | 2     | ~30m  | ~15 min  |
 
 **Recent Trend:**
 
-- Last 5 plans: Phase 2 Plan 01 (domain entities)
-- Trend: on-plan; zero technical deviations; 100% coverage on new domain code
+- Last 5 plans: Phase 2 Plan 01 (domain entities), Phase 2 Plan 02 (application ports + DTOs)
+- Trend: on-plan; two Rule-1/3 tooling deviations on Plan 02 (ruff UP040 → PEP 695 `type` keyword; test_dtos.py split at 100-line ceiling); all auto-fixed within the execution window
 
 *Updated after each plan completion*
 
@@ -71,6 +71,10 @@ Recent decisions affecting current work:
 - 02-01: Ship `DojoError` alone at the domain layer (YAGNI); named subclasses (InvalidEntity etc.) land when a caller needs to branch on error type
 - 02-01: `CardReview.is_correct` is an `@property` derived from `Rating.CORRECT` (not a stored bool) to eliminate computed-vs-stored drift
 - 02-01: **Validation lives at boundary layers, not in domain entities.** `__post_init__` invariants were pulled after PR #4 convergent review → invariant bloat. Domain entities are pure typed data containers; validation is in Pydantic DTOs (LLM boundary), use cases (external-input boundary), and ORM mappers / DB constraints (storage boundary). `_require_nonempty`, `_require_tz_aware`, `_validate_tags` helpers removed
+- 02-02: Application DTOs ARE the trust boundary — `NoteDTO`, `CardDTO`, `GeneratedContent` Pydantic models carry `ConfigDict(extra="ignore")` + `Field(min_length=1)` on every required string and on the `cards` list (closes PITFALL M6). Stdlib frozen dataclasses `GenerateRequest`/`GenerateResponse`/`DraftBundle` are internal and carry no validation
+- 02-02: PEP 695 `type X = Y` syntax adopted for `UrlFetcher` + `SourceReader` Callable aliases (ruff UP040 autofix requires it on Python 3.12+); the older `X: TypeAlias = Y` form is retired across the project
+- 02-02: Circular `ports.py ↔ dtos.py` import broken via `if TYPE_CHECKING:` guards on both sides; both modules use `from __future__ import annotations` so the cross-module type references never resolve at runtime
+- 02-02: `GeneratedContent` Pydantic envelope added as the LLM tool-use deserialisation target (note + cards with `min_length=1`); Phase 3's Anthropic adapter will unpack it to match `LLMProvider.generate_note_and_cards`'s `tuple[NoteDTO, list[CardDTO]]` return shape
 
 ### Pending Todos
 
@@ -95,6 +99,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-04-22T09:45:00.000Z
-Stopped at: Phase 2 Plan 01 complete on phase-02-plan-01-domain-entities; push + open PR, then start Plan 02
-Resume file: .planning/phases/02-domain-application-spine/02-02-application-ports-dtos-PLAN.md
+Last session: 2026-04-22T10:52:53.000Z
+Stopped at: Phase 2 Plan 02 complete on phase-02-plan-02-application-ports-dtos; push + open PR, then start Plan 03 (hand-written fakes)
+Resume file: .planning/phases/02-domain-application-spine/02-03-hand-written-fakes-PLAN.md
