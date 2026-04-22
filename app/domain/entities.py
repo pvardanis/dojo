@@ -8,7 +8,14 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from app.domain.value_objects import CardId, NoteId, SourceId, SourceKind
+from app.domain.value_objects import (
+    CardId,
+    NoteId,
+    Rating,
+    ReviewId,
+    SourceId,
+    SourceKind,
+)
 
 
 def _require_nonempty(value: str, field_name: str) -> None:
@@ -61,3 +68,18 @@ class Card:
         """Reject empty question or answer after whitespace strip."""
         _require_nonempty(self.question, "question")
         _require_nonempty(self.answer, "answer")
+
+
+@dataclass(frozen=True)
+class CardReview:
+    """A single drill rating for one Card."""
+
+    card_id: CardId
+    rating: Rating
+    id: ReviewId = field(default_factory=lambda: ReviewId(uuid.uuid4()))
+    reviewed_at: datetime = field(default_factory=datetime.now)
+
+    @property
+    def is_correct(self) -> bool:
+        """Derive the correct/incorrect boolean from the rating enum."""
+        return self.rating is Rating.CORRECT
