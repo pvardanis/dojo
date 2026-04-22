@@ -1,6 +1,6 @@
-# ABOUTME: Note entity invariants — non-empty content, source association.
-# ABOUTME: Exercises __post_init__ ValueError and NoteId uniqueness.
-"""Note entity unit tests."""
+# ABOUTME: Unit tests for Note entity — title + content_md invariants.
+# ABOUTME: Exercises __post_init__ ValueError and frozen-dataclass semantics.
+"""Unit tests for Note entity."""
 
 from __future__ import annotations
 
@@ -14,33 +14,58 @@ from app.domain.value_objects import SourceId
 
 
 def _make_source_id() -> SourceId:
-    """Return a fresh SourceId for test setup."""
+    """Mint a fresh SourceId for tests that need a parent reference."""
     return SourceId(uuid.uuid4())
 
 
-def test_note_construction_rejects_empty_content() -> None:
-    """Note(content='') raises ValueError."""
-    with pytest.raises(ValueError, match="non-empty"):
-        Note(source_id=_make_source_id(), content="")
+def test_note_constructs_with_title_and_content_md() -> None:
+    """Note builds with title + content_md + source_id."""
+    n = Note(
+        source_id=_make_source_id(),
+        title="k8s intro",
+        content_md="# k8s\n\nbasics",
+    )
+    assert n.title == "k8s intro"
+    assert n.content_md == "# k8s\n\nbasics"
+
+
+def test_note_rejects_empty_title() -> None:
+    """Note construction raises ValueError on whitespace-only title."""
+    with pytest.raises(ValueError, match="title"):
+        Note(
+            source_id=_make_source_id(),
+            title="   ",
+            content_md="content",
+        )
+
+
+def test_note_rejects_empty_content_md() -> None:
+    """Note construction raises ValueError on empty content_md."""
+    with pytest.raises(ValueError, match="content_md"):
+        Note(
+            source_id=_make_source_id(),
+            title="t",
+            content_md="",
+        )
 
 
 def test_note_carries_source_id_association() -> None:
-    """Note stores the source_id it was constructed with."""
+    """Note stores the SourceId it was constructed with."""
     sid = _make_source_id()
-    note = Note(source_id=sid, content="hello")
-    assert note.source_id == sid
+    n = Note(source_id=sid, title="t", content_md="c")
+    assert n.source_id is sid
 
 
 def test_note_id_is_unique() -> None:
-    """Two Note() calls produce distinct NoteIds."""
-    sid = _make_source_id()
-    a = Note(source_id=sid, content="alpha")
-    b = Note(source_id=sid, content="beta")
+    """Two Notes constructed back-to-back have distinct ids."""
+    a = Note(source_id=_make_source_id(), title="t", content_md="c")
+    b = Note(source_id=_make_source_id(), title="t", content_md="c")
     assert a.id != b.id
+    assert isinstance(a.id, uuid.UUID)
 
 
 def test_note_is_frozen() -> None:
-    """Note is a frozen dataclass; attribute mutation raises."""
-    note = Note(source_id=_make_source_id(), content="hello")
+    """Frozen dataclass: direct attribute assignment raises."""
+    n = Note(source_id=_make_source_id(), title="t", content_md="c")
     with pytest.raises(dataclasses.FrozenInstanceError):
-        note.content = "world"  # type: ignore[misc]
+        n.title = "changed"  # type: ignore[misc]

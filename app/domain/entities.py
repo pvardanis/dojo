@@ -26,31 +26,50 @@ def _require_nonempty(value: str, field_name: str) -> None:
 
 @dataclass(frozen=True)
 class Source:
-    """A source of study material."""
+    """Study-material source (TOPIC, FILE, or URL) with prompt + snapshot."""
 
     kind: SourceKind
     user_prompt: str
-    input: str | None = None
+    display_name: str
+    identifier: str | None = None
+    source_text: str | None = None
     id: SourceId = field(default_factory=lambda: SourceId(uuid.uuid4()))
     created_at: datetime = field(default_factory=datetime.now)
 
     def __post_init__(self) -> None:
-        """Reject empty user_prompt after whitespace strip."""
+        """Enforce non-empty strings and kind/identifier coherence."""
         _require_nonempty(self.user_prompt, "user_prompt")
+        _require_nonempty(self.display_name, "display_name")
+        if self.kind is SourceKind.TOPIC:
+            if self.identifier is not None:
+                raise ValueError("TOPIC source must not carry identifier")
+            if self.source_text is not None:
+                raise ValueError("TOPIC source must not carry source_text")
+        else:
+            if self.identifier is None or not self.identifier.strip():
+                raise ValueError(
+                    f"{self.kind.value} source requires non-empty identifier"
+                )
+            if self.source_text is None or not self.source_text.strip():
+                raise ValueError(
+                    f"{self.kind.value} source requires non-empty source_text"
+                )
 
 
 @dataclass(frozen=True)
 class Note:
-    """Generated note content linked to a Source."""
+    """LLM-generated note bound to a Source; overwritten on regenerate."""
 
     source_id: SourceId
-    content: str
+    title: str
+    content_md: str
     id: NoteId = field(default_factory=lambda: NoteId(uuid.uuid4()))
-    created_at: datetime = field(default_factory=datetime.now)
+    generated_at: datetime = field(default_factory=datetime.now)
 
     def __post_init__(self) -> None:
-        """Reject empty content after whitespace strip."""
-        _require_nonempty(self.content, "content")
+        """Reject empty title or content_md after whitespace strip."""
+        _require_nonempty(self.title, "title")
+        _require_nonempty(self.content_md, "content_md")
 
 
 @dataclass(frozen=True)
