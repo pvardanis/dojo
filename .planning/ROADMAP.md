@@ -68,7 +68,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 5 plans
   - [x] 02-01-domain-entities-PLAN.md — Domain entities, value objects, typed IDs, DojoError (stdlib-only; TDD per entity)
   - [x] 02-02-application-ports-dtos-PLAN.md — 6 Protocol ports + 2 Callable aliases + DraftToken + Pydantic/dataclass DTOs + app exceptions
-  - [ ] 02-03-hand-written-fakes-PLAN.md — Seven hand-written fakes under tests/fakes/ (structural subtyping, no Mock())
+  - [x] 02-03-hand-written-fakes-PLAN.md — Seven hand-written fakes under tests/fakes/ (structural subtyping, no Mock())
   - [ ] 02-04-generate-from-source-use-case-PLAN.md — GenerateFromSource use case (TOPIC wired; FILE/URL raise UnsupportedSourceKind)
   - [ ] 02-05-contract-harness-import-linter-PLAN.md — TEST-03 parametrised harness + import-linter DIP boundary enforcement
 

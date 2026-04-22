@@ -39,7 +39,7 @@ spec — requirements here are what the user can do with Dojo v1.
 
 ### Persistence and drafts
 
-- [ ] **DRAFT-01**: In-flight generated content lives in a `DraftStore`
+- [x] **DRAFT-01**: In-flight generated content lives in a `DraftStore`
       (Protocol port, in-memory concrete for MVP) keyed by a session
       token with a 30-minute TTL; expired or abandoned drafts are
       garbage-collected.
@@ -118,7 +118,7 @@ spec — requirements here are what the user can do with Dojo v1.
 
 ### Tests
 
-- [ ] **TEST-01**: Test pyramid with hand-written fakes at every port
+- [x] **TEST-01**: Test pyramid with hand-written fakes at every port
       boundary: unit tests (domain + use cases, fakes only),
       integration tests (real SQLite tmp + real filesystem +
       `respx`-stubbed HTTP), E2E tests (Playwright with a
@@ -203,7 +203,7 @@ to exactly one phase.
 | GEN-01 | Phase 4 — Generate → Review → Save Flow | Pending |
 | GEN-02 | Phase 3 — Infrastructure Adapters | Pending |
 | GEN-03 | Phase 4 — Generate → Review → Save Flow | Pending |
-| DRAFT-01 | Phase 2 — Domain & Application Spine | Pending |
+| DRAFT-01 | Phase 2 — Domain & Application Spine | Complete (Plan 02-03) |
 | PERSIST-01 | Phase 4 — Generate → Review → Save Flow | Pending |
 | PERSIST-02 | Phase 3 — Infrastructure Adapters | Pending |
 | DRILL-01 | Phase 5 — Drill Mode | Pending |
@@ -223,7 +223,7 @@ to exactly one phase.
 | OPS-02 | Phase 1 — Project Scaffold & Tooling | Pending |
 | OPS-03 | Phase 1 — Project Scaffold & Tooling | Pending |
 | OPS-04 | Phase 1 — Project Scaffold & Tooling | Pending |
-| TEST-01 | Phase 2 — Domain & Application Spine | Pending |
+| TEST-01 | Phase 2 — Domain & Application Spine | Complete (Plan 02-03) |
 | TEST-02 | Phase 1 — Project Scaffold & Tooling | Pending |
 | TEST-03 | Phase 2 — Domain & Application Spine | Pending |
 | DOCS-01 | Phase 7 — Documentation & End-to-End Coverage | Pending |
