@@ -1,5 +1,5 @@
 # ABOUTME: Domain entities — Source, Note, Card, CardReview dataclasses.
-# ABOUTME: Frozen, stdlib-only; IDs minted via default_factory at init.
+# ABOUTME: Frozen, stdlib-only; validation lives at boundary layers.
 """Domain entities."""
 
 from __future__ import annotations
@@ -18,27 +18,6 @@ from app.domain.value_objects import (
 )
 
 
-def _require_nonempty(value: str, field_name: str) -> None:
-    """Raise ValueError if `value` is empty or whitespace-only."""
-    if not value.strip():
-        raise ValueError(f"{field_name} must be non-empty")
-
-
-def _require_tz_aware(ts: datetime, field_name: str) -> None:
-    """Raise ValueError if `ts` is a naive (no-tzinfo) datetime."""
-    if ts.tzinfo is None:
-        raise ValueError(f"{field_name} must be timezone-aware")
-
-
-def _validate_tags(tags: tuple[str, ...]) -> None:
-    """Raise ValueError if any tag is blank or the tuple has duplicates."""
-    for i, tag in enumerate(tags):
-        if not tag.strip():
-            raise ValueError(f"tags[{i}] must be non-empty")
-    if len(set(tags)) != len(tags):
-        raise ValueError("tags must not contain duplicates")
-
-
 @dataclass(frozen=True)
 class Source:
     """Study-material source (TOPIC, FILE, or URL) with prompt + snapshot."""
@@ -51,26 +30,6 @@ class Source:
     id: SourceId = field(default_factory=lambda: SourceId(uuid.uuid4()))
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
-    def __post_init__(self) -> None:
-        """Enforce non-empty strings and kind/identifier coherence."""
-        _require_nonempty(self.user_prompt, "user_prompt")
-        _require_nonempty(self.display_name, "display_name")
-        _require_tz_aware(self.created_at, "created_at")
-        if self.kind is SourceKind.TOPIC:
-            if self.identifier is not None:
-                raise ValueError("TOPIC source must not carry identifier")
-            if self.source_text is not None:
-                raise ValueError("TOPIC source must not carry source_text")
-        else:
-            if self.identifier is None or not self.identifier.strip():
-                raise ValueError(
-                    f"{self.kind.value} source requires non-empty identifier"
-                )
-            if self.source_text is None or not self.source_text.strip():
-                raise ValueError(
-                    f"{self.kind.value} source requires non-empty source_text"
-                )
-
 
 @dataclass(frozen=True)
 class Note:
@@ -81,12 +40,6 @@ class Note:
     content_md: str
     id: NoteId = field(default_factory=lambda: NoteId(uuid.uuid4()))
     generated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
-
-    def __post_init__(self) -> None:
-        """Reject empty title or content_md; require tz-aware generated_at."""
-        _require_nonempty(self.title, "title")
-        _require_nonempty(self.content_md, "content_md")
-        _require_tz_aware(self.generated_at, "generated_at")
 
 
 @dataclass(frozen=True)
@@ -100,13 +53,6 @@ class Card:
     id: CardId = field(default_factory=lambda: CardId(uuid.uuid4()))
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
-    def __post_init__(self) -> None:
-        """Enforce non-empty Q&A, tag shape, and tz-aware created_at."""
-        _require_nonempty(self.question, "question")
-        _require_nonempty(self.answer, "answer")
-        _validate_tags(self.tags)
-        _require_tz_aware(self.created_at, "created_at")
-
 
 @dataclass(frozen=True)
 class CardReview:
@@ -117,16 +63,7 @@ class CardReview:
     id: ReviewId = field(default_factory=lambda: ReviewId(uuid.uuid4()))
     reviewed_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
-    def __post_init__(self) -> None:
-        """Require tz-aware reviewed_at."""
-        _require_tz_aware(self.reviewed_at, "reviewed_at")
-
     @property
     def is_correct(self) -> bool:
         """Derive the correct/incorrect boolean from the rating enum."""
-        match self.rating:
-            case Rating.CORRECT:
-                return True
-            case Rating.INCORRECT:
-                return False
-        raise ValueError(f"unhandled Rating: {self.rating!r}")
+        return self.rating is Rating.CORRECT
