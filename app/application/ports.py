@@ -91,8 +91,8 @@ class DraftStore(Protocol):
         ...
 
 
+# URL → text fetcher (stateless). Phase 3 trafilatura adapter.
 type UrlFetcher = Callable[[str], str]
-"""URL → text fetcher (stateless). Phase 3 trafilatura adapter."""
 
+# Path → raw-text reader (stateless). Phase 3 filesystem adapter.
 type SourceReader = Callable[[Path], str]
-"""Path → raw-text reader (stateless). Phase 3 filesystem adapter."""

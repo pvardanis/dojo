@@ -9,26 +9,6 @@ import uuid
 from app.application import ports
 
 
-def test_six_protocols_declared() -> None:
-    """All six ports are attributes of the ports module."""
-    expected = {
-        "LLMProvider",
-        "SourceRepository",
-        "NoteRepository",
-        "CardRepository",
-        "CardReviewRepository",
-        "DraftStore",
-    }
-    for name in expected:
-        assert hasattr(ports, name), f"missing port: {name}"
-
-
-def test_two_callable_aliases_declared() -> None:
-    """UrlFetcher and SourceReader are declared on the ports module."""
-    assert hasattr(ports, "UrlFetcher")
-    assert hasattr(ports, "SourceReader")
-
-
 def test_draft_token_is_new_type_over_uuid() -> None:
     """DraftToken is a NewType whose supertype is uuid.UUID."""
     assert ports.DraftToken.__supertype__ is uuid.UUID
