@@ -36,6 +36,16 @@ def test_card_review_is_correct_matches_rating() -> None:
     assert incorrect.is_correct is False
 
 
+def test_card_review_is_correct_raises_on_unknown_rating() -> None:
+    """is_correct fails loud if a future Rating enum value is not handled."""
+    review = CardReview(card_id=_make_card_id(), rating=Rating.CORRECT)
+    # Bypass frozen/type-check to simulate a future enum member unmapped
+    # in the match statement (e.g. Rating.SKIPPED if it lands later).
+    object.__setattr__(review, "rating", "UNEXPECTED")
+    with pytest.raises(ValueError, match="unhandled Rating"):
+        _ = review.is_correct
+
+
 def test_card_review_carries_card_id_association() -> None:
     """CardReview stores the card_id it was constructed with."""
     cid = _make_card_id()

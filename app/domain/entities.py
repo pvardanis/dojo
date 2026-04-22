@@ -124,4 +124,9 @@ class CardReview:
     @property
     def is_correct(self) -> bool:
         """Derive the correct/incorrect boolean from the rating enum."""
-        return self.rating is Rating.CORRECT
+        match self.rating:
+            case Rating.CORRECT:
+                return True
+            case Rating.INCORRECT:
+                return False
+        raise ValueError(f"unhandled Rating: {self.rating!r}")
