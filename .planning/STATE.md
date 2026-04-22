@@ -68,9 +68,9 @@ Recent decisions affecting current work:
 - Pre-roadmap: Drafts in-memory only; DB writes only on explicit user save
 - Pre-roadmap: Hand-written fakes at DIP boundaries, no `Mock()` behavior-testing
 - 02-01: Commit convention override — merge RED+GREEN per unit of behavior (pytest-unit pre-commit hook blocks RED-only commits that import unbuilt modules); TDD discipline lives in the dev loop, not in commit granularity
-- 02-01: `_require_nonempty` private helper extracted upfront in `app/domain/entities.py` (shared across Source/Note/Card invariants); avoids a separate refactor commit
 - 02-01: Ship `DojoError` alone at the domain layer (YAGNI); named subclasses (InvalidEntity etc.) land when a caller needs to branch on error type
 - 02-01: `CardReview.is_correct` is an `@property` derived from `Rating.CORRECT` (not a stored bool) to eliminate computed-vs-stored drift
+- 02-01: **Validation lives at boundary layers, not in domain entities.** `__post_init__` invariants were pulled after PR #4 convergent review → invariant bloat. Domain entities are pure typed data containers; validation is in Pydantic DTOs (LLM boundary), use cases (external-input boundary), and ORM mappers / DB constraints (storage boundary). `_require_nonempty`, `_require_tz_aware`, `_validate_tags` helpers removed
 
 ### Pending Todos
 
