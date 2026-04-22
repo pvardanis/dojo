@@ -8,7 +8,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from app.domain.value_objects import SourceId, SourceKind
+from app.domain.value_objects import NoteId, SourceId, SourceKind
 
 
 def _require_nonempty(value: str, field_name: str) -> None:
@@ -30,3 +30,17 @@ class Source:
     def __post_init__(self) -> None:
         """Reject empty user_prompt after whitespace strip."""
         _require_nonempty(self.user_prompt, "user_prompt")
+
+
+@dataclass(frozen=True)
+class Note:
+    """Generated note content linked to a Source."""
+
+    source_id: SourceId
+    content: str
+    id: NoteId = field(default_factory=lambda: NoteId(uuid.uuid4()))
+    created_at: datetime = field(default_factory=datetime.now)
+
+    def __post_init__(self) -> None:
+        """Reject empty content after whitespace strip."""
+        _require_nonempty(self.content, "content")
