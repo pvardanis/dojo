@@ -65,7 +65,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. Hand-written fakes live under `tests/fakes/`, implement each Protocol by structural subtyping, expose assertable state (not call patterns), and are exercised by unit tests that use no `Mock()` behavior-testing
   5. A contract-test harness parameterised over `[FakeLLMProvider, AnthropicLLMProvider]` exists and is gated on `RUN_LLM_TESTS=1`; the Anthropic variant skips cleanly when the env var is unset, and the Fake variant runs on every `make check`
   6. `import-linter` (or equivalent) is configured so a test asserts that `app/domain/` and `app/application/` never import from `app/infrastructure/` or `app/web/`
-**Plans**: TBD
+**Plans**: 5 plans
+  - [ ] 02-01-domain-entities-PLAN.md — Domain entities, value objects, typed IDs, DojoError (stdlib-only; TDD per entity)
+  - [ ] 02-02-application-ports-dtos-PLAN.md — 6 Protocol ports + 2 Callable aliases + DraftToken + Pydantic/dataclass DTOs + app exceptions
+  - [ ] 02-03-hand-written-fakes-PLAN.md — Seven hand-written fakes under tests/fakes/ (structural subtyping, no Mock())
+  - [ ] 02-04-generate-from-source-use-case-PLAN.md — GenerateFromSource use case (TOPIC wired; FILE/URL raise UnsupportedSourceKind)
+  - [ ] 02-05-contract-harness-import-linter-PLAN.md — TEST-03 parametrised harness + import-linter DIP boundary enforcement
 
 ### Phase 3: Infrastructure Adapters
 **Goal**: Every port declared in Phase 2 has a real concrete adapter that passes both its own integration tests and the Phase 2 contract tests: SQLAlchemy ORM models + mappers + repositories (with eager loading and `expire_on_commit=False`), `AnthropicLLMProvider` (tenacity retries, DTO-validated tool-use output, wrapped exceptions), `InMemoryDraftStore` (TTL + `asyncio.Lock` + atomic `pop`), filesystem reader, and URL fetcher (trafilatura + paywall heuristics).
