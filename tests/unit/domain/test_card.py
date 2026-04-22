@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import dataclasses
 import uuid
+from datetime import datetime
 
 import pytest
 
@@ -48,3 +49,14 @@ def test_card_is_frozen() -> None:
     card = Card(source_id=_make_source_id(), question="q?", answer="a.")
     with pytest.raises(dataclasses.FrozenInstanceError):
         card.question = "new?"  # type: ignore[misc]
+
+
+def test_card_rejects_naive_created_at() -> None:
+    """Card construction with a naive datetime raises ValueError."""
+    with pytest.raises(ValueError, match="created_at must be timezone-aware"):
+        Card(
+            source_id=_make_source_id(),
+            question="q?",
+            answer="a.",
+            created_at=datetime(2026, 4, 22, 9, 0, 0),
+        )

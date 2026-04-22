@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import dataclasses
 import uuid
+from datetime import datetime
 
 import pytest
 
@@ -135,3 +136,14 @@ def test_source_is_frozen() -> None:
     s = Source(kind=SourceKind.TOPIC, user_prompt="x", display_name="t")
     with pytest.raises(dataclasses.FrozenInstanceError):
         s.user_prompt = "changed"  # type: ignore[misc]
+
+
+def test_source_rejects_naive_created_at() -> None:
+    """Source construction with a naive datetime raises ValueError."""
+    with pytest.raises(ValueError, match="created_at must be timezone-aware"):
+        Source(
+            kind=SourceKind.TOPIC,
+            user_prompt="x",
+            display_name="t",
+            created_at=datetime(2026, 4, 22, 9, 0, 0),
+        )

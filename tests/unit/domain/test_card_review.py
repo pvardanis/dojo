@@ -48,3 +48,13 @@ def test_card_review_is_frozen() -> None:
     review = CardReview(card_id=_make_card_id(), rating=Rating.CORRECT)
     with pytest.raises(dataclasses.FrozenInstanceError):
         review.rating = Rating.INCORRECT  # type: ignore[misc]
+
+
+def test_card_review_rejects_naive_reviewed_at() -> None:
+    """CardReview with a naive datetime raises ValueError."""
+    with pytest.raises(ValueError, match="reviewed_at must be timezone-aware"):
+        CardReview(
+            card_id=_make_card_id(),
+            rating=Rating.CORRECT,
+            reviewed_at=datetime(2026, 4, 22, 9, 0, 0),
+        )

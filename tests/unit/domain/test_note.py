@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import dataclasses
 import uuid
+from datetime import datetime
 
 import pytest
 
@@ -69,3 +70,16 @@ def test_note_is_frozen() -> None:
     n = Note(source_id=_make_source_id(), title="t", content_md="c")
     with pytest.raises(dataclasses.FrozenInstanceError):
         n.title = "changed"  # type: ignore[misc]
+
+
+def test_note_rejects_naive_generated_at() -> None:
+    """Note construction with a naive datetime raises ValueError."""
+    with pytest.raises(
+        ValueError, match="generated_at must be timezone-aware"
+    ):
+        Note(
+            source_id=_make_source_id(),
+            title="t",
+            content_md="c",
+            generated_at=datetime(2026, 4, 22, 9, 0, 0),
+        )
