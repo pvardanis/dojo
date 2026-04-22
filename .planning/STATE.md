@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planned
-stopped_at: Phase 2 planned (5 plans, 5 sequential waves, all SCs mapped)
-last_updated: "2026-04-22T08:45:00.000Z"
-last_activity: 2026-04-22 -- Phase 2 planned; ready to execute
+status: executing
+stopped_at: Phase 2 Wave 1 complete — plan 01 landed; ready to open PR
+last_updated: "2026-04-22T09:45:00.000Z"
+last_activity: 2026-04-22 -- Phase 2 Plan 01 (domain entities) complete on phase-02-plan-01-domain-entities
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 6
-  completed_plans: 6
-  percent: 14
+  completed_plans: 7
+  percent: 16
 ---
 
 # Project State
@@ -25,31 +25,31 @@ See: .planning/PROJECT.md (updated 2026-04-18)
 
 ## Current Position
 
-Phase: 2 of 7 — planned
-Plan: 0 of 5 — execution not yet started
-Status: Phase 2 artifacts complete (CONTEXT, RESEARCH, PATTERNS, 5 PLANs) on branch phase-02-planning; plan-checker PASSED with 12/12 decisions implemented. Ready for /gsd-execute-phase 2.
-Last activity: 2026-04-22 -- Phase 2 context gathered; branch phase-02-planning
+Phase: 2 of 7 — executing
+Plan: 1 of 5 complete — domain entities landed on branch phase-02-plan-01-domain-entities; awaiting PR merge before Plan 02 begins
+Status: Plan 02-01 delivered 4 frozen dataclasses + 2 enums + 4 NewType IDs + DojoError base; 22/22 domain unit tests green; make check clean; stdlib-only verified.
+Last activity: 2026-04-22 -- Plan 02-01 complete; SUMMARY.md + STATE + ROADMAP updated
 
-Progress: [█░░░░░░░░░] 14%
+Progress: [█▒░░░░░░░░] 16%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 0
-- Average duration: —
-- Total execution time: 0 hours
+- Total plans completed: 7 (6 Phase 1 + 1 Phase 2)
+- Average duration: ~25 min (Plan 02-01)
+- Total execution time: ~25 min (Phase 2 portion)
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 2     | 1     | ~25m  | ~25 min  |
 
 **Recent Trend:**
 
-- Last 5 plans: —
-- Trend: —
+- Last 5 plans: Phase 2 Plan 01 (domain entities)
+- Trend: on-plan; zero technical deviations; 100% coverage on new domain code
 
 *Updated after each plan completion*
 
@@ -67,6 +67,10 @@ Recent decisions affecting current work:
 - Pre-roadmap: Spec at `docs/superpowers/specs/2026-04-18-dojo-design.md` is authoritative; PROJECT.md is distilled
 - Pre-roadmap: Drafts in-memory only; DB writes only on explicit user save
 - Pre-roadmap: Hand-written fakes at DIP boundaries, no `Mock()` behavior-testing
+- 02-01: Commit convention override — merge RED+GREEN per unit of behavior (pytest-unit pre-commit hook blocks RED-only commits that import unbuilt modules); TDD discipline lives in the dev loop, not in commit granularity
+- 02-01: `_require_nonempty` private helper extracted upfront in `app/domain/entities.py` (shared across Source/Note/Card invariants); avoids a separate refactor commit
+- 02-01: Ship `DojoError` alone at the domain layer (YAGNI); named subclasses (InvalidEntity etc.) land when a caller needs to branch on error type
+- 02-01: `CardReview.is_correct` is an `@property` derived from `Rating.CORRECT` (not a stored bool) to eliminate computed-vs-stored drift
 
 ### Pending Todos
 
@@ -91,6 +95,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-04-22T08:45:00.000Z
-Stopped at: Phase 2 planned; ready to execute
-Resume file: .planning/phases/02-domain-application-spine/02-01-domain-entities-PLAN.md
+Last session: 2026-04-22T09:45:00.000Z
+Stopped at: Phase 2 Plan 01 complete on phase-02-plan-01-domain-entities; push + open PR, then start Plan 02
+Resume file: .planning/phases/02-domain-application-spine/02-02-application-ports-dtos-PLAN.md
