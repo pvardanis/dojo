@@ -60,6 +60,28 @@ def test_card_review_is_frozen() -> None:
         review.rating = Rating.INCORRECT  # type: ignore[misc]
 
 
+def test_card_review_equality_and_hash() -> None:
+    """Two freshly-constructed CardReviews are NOT equal (distinct ids)."""
+    cid = _make_card_id()
+    a = CardReview(card_id=cid, rating=Rating.CORRECT)
+    b = CardReview(card_id=cid, rating=Rating.CORRECT)
+    assert a != b
+    assert a == a
+    assert {a, a} == {a}
+
+
+def test_card_review_is_correct_is_a_property_not_a_field() -> None:
+    """is_correct is a derived @property, not a stored dataclass field.
+
+    If a future refactor accidentally adds `is_correct: bool = field(...)`,
+    stored-vs-computed drift becomes possible. This test pins the
+    architectural choice (D-03 in SUMMARY).
+    """
+    field_names = {f.name for f in dataclasses.fields(CardReview)}
+    assert "is_correct" not in field_names
+    assert isinstance(CardReview.is_correct, property)
+
+
 def test_card_review_rejects_naive_reviewed_at() -> None:
     """CardReview with a naive datetime raises ValueError."""
     with pytest.raises(ValueError, match="reviewed_at must be timezone-aware"):

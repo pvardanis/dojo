@@ -51,6 +51,16 @@ def test_card_is_frozen() -> None:
         card.question = "new?"  # type: ignore[misc]
 
 
+def test_card_equality_and_hash() -> None:
+    """Two freshly-constructed Cards are NOT equal (distinct ids); hashable."""
+    sid = _make_source_id()
+    a = Card(source_id=sid, question="q?", answer="a.")
+    b = Card(source_id=sid, question="q?", answer="a.")
+    assert a != b
+    assert a == a
+    assert {a, a} == {a}
+
+
 def test_card_rejects_empty_tag() -> None:
     """Empty/whitespace-only tag entries raise ValueError."""
     with pytest.raises(ValueError, match=r"tags\[1\] must be non-empty"):

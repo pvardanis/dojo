@@ -72,6 +72,16 @@ def test_note_is_frozen() -> None:
         n.title = "changed"  # type: ignore[misc]
 
 
+def test_note_equality_and_hash() -> None:
+    """Two freshly-constructed Notes are NOT equal (distinct ids); hashable."""
+    sid = _make_source_id()
+    a = Note(source_id=sid, title="t", content_md="c")
+    b = Note(source_id=sid, title="t", content_md="c")
+    assert a != b
+    assert a == a
+    assert {a, a} == {a}
+
+
 def test_note_rejects_naive_generated_at() -> None:
     """Note construction with a naive datetime raises ValueError."""
     with pytest.raises(

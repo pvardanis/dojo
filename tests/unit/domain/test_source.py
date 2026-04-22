@@ -138,6 +138,15 @@ def test_source_is_frozen() -> None:
         s.user_prompt = "changed"  # type: ignore[misc]
 
 
+def test_source_equality_and_hash() -> None:
+    """Two fresh Sources are NOT equal (distinct ids); hashable."""
+    a = Source(kind=SourceKind.TOPIC, user_prompt="x", display_name="t")
+    b = Source(kind=SourceKind.TOPIC, user_prompt="x", display_name="t")
+    assert a != b
+    assert a == a
+    assert {a, a} == {a}
+
+
 def test_source_rejects_naive_created_at() -> None:
     """Source construction with a naive datetime raises ValueError."""
     with pytest.raises(ValueError, match="created_at must be timezone-aware"):
