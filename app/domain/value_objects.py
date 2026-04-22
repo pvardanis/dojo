@@ -5,23 +5,23 @@
 from __future__ import annotations
 
 import uuid
-from enum import StrEnum
+from enum import StrEnum, auto
 from typing import NewType
 
 
 class SourceKind(StrEnum):
     """Kind of source material a generation request targets."""
 
-    FILE = "file"
-    URL = "url"
-    TOPIC = "topic"
+    FILE = auto()
+    URL = auto()
+    TOPIC = auto()
 
 
 class Rating(StrEnum):
     """User rating applied to a drilled card."""
 
-    CORRECT = "correct"
-    INCORRECT = "incorrect"
+    CORRECT = auto()
+    INCORRECT = auto()
 
 
 SourceId = NewType("SourceId", uuid.UUID)
