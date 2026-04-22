@@ -51,6 +51,39 @@ def test_card_is_frozen() -> None:
         card.question = "new?"  # type: ignore[misc]
 
 
+def test_card_rejects_empty_tag() -> None:
+    """Empty/whitespace-only tag entries raise ValueError."""
+    with pytest.raises(ValueError, match=r"tags\[1\] must be non-empty"):
+        Card(
+            source_id=_make_source_id(),
+            question="q?",
+            answer="a.",
+            tags=("python", "  "),
+        )
+
+
+def test_card_rejects_duplicate_tags() -> None:
+    """Duplicate tag entries raise ValueError."""
+    with pytest.raises(ValueError, match="tags must not contain duplicates"):
+        Card(
+            source_id=_make_source_id(),
+            question="q?",
+            answer="a.",
+            tags=("python", "python"),
+        )
+
+
+def test_card_accepts_multiple_distinct_tags() -> None:
+    """A tuple of distinct, non-empty tags is accepted verbatim."""
+    card = Card(
+        source_id=_make_source_id(),
+        question="q?",
+        answer="a.",
+        tags=("python", "kubernetes", "helm"),
+    )
+    assert card.tags == ("python", "kubernetes", "helm")
+
+
 def test_card_rejects_naive_created_at() -> None:
     """Card construction with a naive datetime raises ValueError."""
     with pytest.raises(ValueError, match="created_at must be timezone-aware"):

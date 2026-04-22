@@ -30,6 +30,15 @@ def _require_tz_aware(ts: datetime, field_name: str) -> None:
         raise ValueError(f"{field_name} must be timezone-aware")
 
 
+def _validate_tags(tags: tuple[str, ...]) -> None:
+    """Raise ValueError if any tag is blank or the tuple has duplicates."""
+    for i, tag in enumerate(tags):
+        if not tag.strip():
+            raise ValueError(f"tags[{i}] must be non-empty")
+    if len(set(tags)) != len(tags):
+        raise ValueError("tags must not contain duplicates")
+
+
 @dataclass(frozen=True)
 class Source:
     """Study-material source (TOPIC, FILE, or URL) with prompt + snapshot."""
@@ -92,9 +101,10 @@ class Card:
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def __post_init__(self) -> None:
-        """Reject empty question/answer; require tz-aware created_at."""
+        """Enforce non-empty Q&A, tag shape, and tz-aware created_at."""
         _require_nonempty(self.question, "question")
         _require_nonempty(self.answer, "answer")
+        _validate_tags(self.tags)
         _require_tz_aware(self.created_at, "created_at")
 
 
