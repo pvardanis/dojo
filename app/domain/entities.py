@@ -8,7 +8,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from app.domain.value_objects import NoteId, SourceId, SourceKind
+from app.domain.value_objects import CardId, NoteId, SourceId, SourceKind
 
 
 def _require_nonempty(value: str, field_name: str) -> None:
@@ -44,3 +44,20 @@ class Note:
     def __post_init__(self) -> None:
         """Reject empty content after whitespace strip."""
         _require_nonempty(self.content, "content")
+
+
+@dataclass(frozen=True)
+class Card:
+    """A single question-and-answer card linked to a Source."""
+
+    source_id: SourceId
+    question: str
+    answer: str
+    tags: tuple[str, ...] = ()
+    id: CardId = field(default_factory=lambda: CardId(uuid.uuid4()))
+    created_at: datetime = field(default_factory=datetime.now)
+
+    def __post_init__(self) -> None:
+        """Reject empty question or answer after whitespace strip."""
+        _require_nonempty(self.question, "question")
+        _require_nonempty(self.answer, "answer")
