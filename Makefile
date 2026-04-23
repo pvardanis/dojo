@@ -1,8 +1,8 @@
 # ABOUTME: Dojo dev workflow. `make check` is the CI contract.
 # ABOUTME: Spec §8.1 9 targets + test-flakes (SC #4 gate) + clean.
 
-.PHONY: install format lint typecheck docstrings test check run \
-        migrate test-flakes clean
+.PHONY: install format lint typecheck docstrings docparams test check \
+        run migrate test-flakes clean
 
 install:
 	uv sync
@@ -20,10 +20,13 @@ typecheck:
 docstrings:
 	uv run interrogate -c pyproject.toml app
 
+docparams:
+	uv run pydoclint --config=pyproject.toml app
+
 test:
 	uv run pytest
 
-check: format lint typecheck docstrings test
+check: format lint typecheck docstrings docparams test
 
 run:
 	uv run uvicorn app.main:app --reload --port 8000
