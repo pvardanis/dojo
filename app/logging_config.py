@@ -13,7 +13,12 @@ import structlog
 
 
 def configure_logging(log_level: str = "INFO") -> None:
-    """Configure structlog + stdlib logging once at app startup."""
+    """Configure structlog + stdlib logging once at app startup.
+
+    :param log_level: Logging level name (``"DEBUG"``, ``"INFO"``,
+        ``"WARNING"``, ``"ERROR"``, ``"CRITICAL"``). Case-insensitive;
+        falls back to ``INFO`` when unrecognized.
+    """
     level = getattr(logging, log_level.upper(), logging.INFO)
     logging.basicConfig(
         format="%(message)s",
@@ -53,7 +58,11 @@ def configure_logging(log_level: str = "INFO") -> None:
 def get_logger(name: str) -> Any:
     """Return a module-bound structlog logger.
 
-    Every module uses `log = get_logger(__name__)` — identical
+    Every module uses ``log = get_logger(__name__)`` — identical
     ergonomics to stdlib logging, structlog's structure underneath.
+
+    :param name: Logger name, conventionally ``__name__`` from the
+        calling module.
+    :returns: A structlog ``BoundLogger`` wired to stdlib logging.
     """
     return structlog.get_logger(name)
