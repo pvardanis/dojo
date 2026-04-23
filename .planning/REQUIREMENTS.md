@@ -126,7 +126,7 @@ spec — requirements here are what the user can do with Dojo v1.
 - [ ] **TEST-02**: `make check` exits zero with `ruff` clean, `ty`
       clean, `interrogate` at 100%, and `pytest` passing at >90%
       coverage; test output is pristine (no stray warnings or logs).
-- [ ] **TEST-03**: Contract tests parameterised over
+- [x] **TEST-03**: Contract tests parameterised over
       `[FakeLLMProvider, AnthropicLLMProvider]` guard against fake
       drift on every CI run; the AnthropicLLMProvider variant is
       opt-in via env var so CI doesn't hit the API by default.
@@ -225,7 +225,7 @@ to exactly one phase.
 | OPS-04 | Phase 1 — Project Scaffold & Tooling | Pending |
 | TEST-01 | Phase 2 — Domain & Application Spine | Complete (Plan 02-03) |
 | TEST-02 | Phase 1 — Project Scaffold & Tooling | Pending |
-| TEST-03 | Phase 2 — Domain & Application Spine | Pending |
+| TEST-03 | Phase 2 — Domain & Application Spine | Complete (Plan 02-05) |
 | DOCS-01 | Phase 7 — Documentation & End-to-End Coverage | Pending |
 | DOCS-02 | Phase 7 — Documentation & End-to-End Coverage | Pending |
 

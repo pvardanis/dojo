@@ -24,7 +24,7 @@ generic "polish" bucket.
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Project Scaffold & Tooling** (completed 2026-04-21) - Boring-but-correct Python project foundation: uv, ruff, ty, interrogate, pytest-asyncio, async Alembic, pre-commit, GitHub Actions CI, structlog, settings
-- [ ] **Phase 2: Domain & Application Spine** - Pure domain entities, application ports (incl. DraftStore Protocol), DTOs, and GenerateFromSource use case (TOPIC kind) driven end-to-end by hand-written fakes
+- [x] **Phase 2: Domain & Application Spine** (completed 2026-04-23) - Pure domain entities, application ports (incl. DraftStore Protocol), DTOs, and GenerateFromSource use case (TOPIC kind) driven end-to-end by hand-written fakes
 - [ ] **Phase 3: Infrastructure Adapters** - Real adapters behind every port: SQLAlchemy repos with mappers, Anthropic provider with tenacity retries and DTO validation, InMemoryDraftStore with TTL + lock, FILE reader, URL fetcher with paywall guards
 - [ ] **Phase 4: Generate → Review → Save Flow** - FastAPI skeleton + lifespan + deps.py wired to real infra; Generate/Review/Save routes for FILE, URL, and TOPIC sources with atomic persistence
 - [ ] **Phase 5: Drill Mode** - Drill start page with session cap, card-by-card keyboard/click UX with sanitized markdown rendering and swipe animation, CardReview log, end-of-session summary
@@ -70,7 +70,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   - [x] 02-02-application-ports-dtos-PLAN.md — 6 Protocol ports + 2 Callable aliases + DraftToken + Pydantic/dataclass DTOs + app exceptions
   - [x] 02-03-hand-written-fakes-PLAN.md — Seven hand-written fakes under tests/fakes/ (structural subtyping, no Mock())
   - [x] 02-04-generate-from-source-use-case-PLAN.md — GenerateFromSource use case (TOPIC wired; FILE/URL raise UnsupportedSourceKind)
-  - [ ] 02-05-contract-harness-import-linter-PLAN.md — TEST-03 parametrised harness + import-linter DIP boundary enforcement
+  - [x] 02-05-contract-harness-import-linter-PLAN.md — TEST-03 parametrised harness + import-linter DIP boundary enforcement
 
 ### Phase 3: Infrastructure Adapters
 **Goal**: Every port declared in Phase 2 has a real concrete adapter that passes both its own integration tests and the Phase 2 contract tests: SQLAlchemy ORM models + mappers + repositories (with eager loading and `expire_on_commit=False`), `AnthropicLLMProvider` (tenacity retries, DTO-validated tool-use output, wrapped exceptions), `InMemoryDraftStore` (TTL + `asyncio.Lock` + atomic `pop`), filesystem reader, and URL fetcher (trafilatura + paywall heuristics).

@@ -68,7 +68,7 @@ captured: 2026-04-21
 ## Open items (tracked, not blocking)
 
 - **SC #6 deferred:** no GitHub remote yet. Will fire on first push.
-- **Phase-2 boundary lint:** `importlinter` or grep-in-CI to enforce "application/domain never imports infrastructure" — needed before any Phase 2 code lands.
+- ~~**Phase-2 boundary lint:** `importlinter` or grep-in-CI to enforce "application/domain never imports infrastructure" — needed before any Phase 2 code lands.~~ **Closed 2026-04-23 by Plan 02-05** — `import-linter>=2.0` wired into `make lint` with two forbidden contracts; negative-path proof captured in `02-05-SUMMARY.md`.
 - **Module-level engine → factory:** convert to `get_engine()` lru_cache pattern in Phase 3.
 - **`test_home` content-type negotiation:** revisit when HTMX partials land in Phase 4+.
 - **`alembic` logger INFO for integration tests:** currently clamped to WARNING; Phase 3 may want the upgrade breadcrumb back.
