@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 2 Wave 4 — plan 04 (GenerateFromSource use case) landed; ready to open PR
-last_updated: "2026-04-22T11:42:00.000Z"
-last_activity: 2026-04-22 -- Phase 2 Plan 04 (GenerateFromSource use case) complete on phase-02-plan-04-generate-from-source-use-case
+stopped_at: Phase 2 complete — all 5 plans shipped; ready to plan Phase 3 (Infrastructure Adapters)
+last_updated: "2026-04-23T12:26:00.000Z"
+last_activity: 2026-04-23 -- Phase 2 Plan 05 (contract harness + import-linter) complete on phase-02-plan-05-contract-harness-import-linter; Phase 2 closed
 progress:
   total_phases: 7
-  completed_phases: 1
-  total_plans: 6
-  completed_plans: 10
-  percent: 22
+  completed_phases: 2
+  total_plans: 5
+  completed_plans: 11
+  percent: 28
 ---
 
 # Project State
@@ -21,35 +21,35 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-18)
 
 **Core value:** Generate Q&A cards from user-supplied source material, drill them interactively, retain knowledge. The generate → drill → learn loop must work even if everything else fails.
-**Current focus:** Phase 2 — Domain & Application Spine (executing, Wave 4)
+**Current focus:** Phase 2 closed; Phase 3 — Infrastructure Adapters is next (planning not yet started)
 
 ## Current Position
 
-Phase: 2 of 7 — executing
-Plan: 4 of 5 complete — GenerateFromSource use case landed on branch phase-02-plan-04-generate-from-source-use-case; awaiting PR merge before Plan 05 begins
-Status: Plan 02-04 delivered app/application/use_cases/generate_from_source.py (45 LOC: class GenerateFromSource with __init__(llm, draft_store) and execute(request) -> GenerateResponse; TOPIC branch calls LLMProvider.generate_note_and_cards(source_text=None, user_prompt=...), wraps the result in a DraftBundle, mints DraftToken(uuid.uuid4()), puts the bundle in the DraftStore, returns GenerateResponse; FILE/URL raise UnsupportedSourceKind with the kind value embedded) + 2 split test files (test_generate_topic.py 4 tests + test_generate_unsupported.py 3 tests = 7 end-to-end tests against FakeLLMProvider + FakeDraftStore). make check clean (83 tests, 96% coverage); discharges Phase 2 SC #3.
-Last activity: 2026-04-22 -- Plan 02-04 complete; SUMMARY.md + STATE + ROADMAP updated
+Phase: 2 of 7 — complete
+Plan: 5 of 5 complete — Plan 05 landed on branch phase-02-plan-05-contract-harness-import-linter; Phase 2 closed
+Status: Plan 02-05 delivered tests/contract/__init__.py (3 LOC) + tests/contract/test_llm_provider_contract.py (38 LOC) — TEST-03 harness parameterised over ["fake", "anthropic"] with double-gate (RUN_LLM_TESTS + pytest.importorskip on app.infrastructure.llm.anthropic_provider); anthropic leg auto-skips cleanly in Phase 2 whether RUN_LLM_TESTS is set or not. pyproject.toml gained import-linter>=2.0 + [tool.importlinter] with two forbidden contracts (app.domain and app.application must not import app.infrastructure or app.web). Makefile lint: target extended to two lines (ruff + lint-imports). Negative-path proof captured (deliberate boundary violation made lint-imports exit non-zero, reverted without commit). make check: 94 passed, 1 skipped, 97% coverage, 2.48s end-to-end. Discharges Phase 2 SC #5 + SC #6 and TEST-03; closes Phase-1 LEARNINGS open item "Phase-2 boundary lint".
+Last activity: 2026-04-23 -- Plan 02-05 complete; SUMMARY.md + STATE + ROADMAP + REQUIREMENTS updated; Phase 1 LEARNINGS open item closed
 
-Progress: [██░░░░░░░░] 22%
+Progress: [███░░░░░░░] 28%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 10 (6 Phase 1 + 4 Phase 2)
-- Average duration: ~13 min (Phase 2 portion)
-- Total execution time: ~51 min (Phase 2 portion)
+- Total plans completed: 11 (6 Phase 1 + 5 Phase 2)
+- Average duration: ~12 min (Phase 2 portion)
+- Total execution time: ~55 min (Phase 2 portion)
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 2     | 4     | ~51m  | ~13 min  |
+| 2     | 5     | ~55m  | ~11 min  |
 
 **Recent Trend:**
 
-- Last 5 plans: Phase 2 Plan 01 (domain entities), Phase 2 Plan 02 (application ports + DTOs), Phase 2 Plan 03 (hand-written fakes), Phase 2 Plan 04 (GenerateFromSource use case)
-- Trend: on-plan; Plan 04 landed in ~3 min (fastest of Phase 2) with zero Rule deviations — split-file sizing flag was the only plan-flagged seam, applied as the plan directed. RED+GREEN merged into one commit per the Plan 02-01 convention override.
+- Last 5 plans: Phase 2 Plan 01 (domain entities), Phase 2 Plan 02 (application ports + DTOs), Phase 2 Plan 03 (hand-written fakes), Phase 2 Plan 04 (GenerateFromSource use case), Phase 2 Plan 05 (contract harness + import-linter)
+- Trend: on-plan; Plan 05 landed in ~4 min with zero Rule deviations and zero pre-commit retries. Both tasks' acceptance criteria passed first try; make check end-to-end 2.48s. Closed Phase 2 in full — all 6 SC satisfied, 3 requirements discharged (DRAFT-01, TEST-01, TEST-03), Phase-1 LEARNINGS open item "Phase-2 boundary lint" closed.
 
 *Updated after each plan completion*
 
