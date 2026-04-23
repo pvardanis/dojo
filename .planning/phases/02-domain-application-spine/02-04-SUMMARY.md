@@ -205,3 +205,105 @@ None — this plan is pure application-layer synthesis. No filesystem / network 
 
 **Commit verified (via `git log`):**
 - [x] `a39b718` feat(02-04): add GenerateFromSource use case (TOPIC branch)
+
+---
+
+## Post-plan refactor: registry-based non-TOPIC dispatch
+
+**Scope:** two additional commits on the same PR branch after the plan closed — introducing a generic `Registry` abstraction and wiring `GenerateFromSource` to dispatch non-TOPIC kinds through it. Motivated by anticipated growth (FILE + URL extractors in Phase 4, and likely more keyed-dispatch domains after that). The original two-branch `if request.kind is SourceKind.TOPIC: ... else: raise` collapsed `GenerateFromSource`'s branching surface at the price of hard-coding "unsupported-kind" knowledge into the use case; the registry pulls that knowledge out into a composable abstraction.
+
+### What landed
+
+**1. `app/application/registry.py` — generic ABC** (14 LOC)
+
+```python
+class Registry[K: Hashable, V](ABC):
+    def __init__(self, entries: Mapping[K, V] = MappingProxyType({})) -> None: ...
+    def get(self, key: K) -> V: ...                  # raises self._missing_error on miss
+    @abstractmethod
+    def _missing_error(self, key: K) -> Exception: ...
+```
+
+PEP 695 syntax, `K` bound to `Hashable`, entries immutable after construction (`MappingProxyType({})` default), no `register()` mutation — full mapping supplied at init. Subclasses provide the domain-specific missing-key error via `_missing_error`.
+
+**2. `app/application/extractor_registry.py` — concrete specialization** (12 LOC)
+
+```python
+class SourceTextExtractorRegistry(Registry[SourceKind, SourceTextExtractor]):
+    def _missing_error(self, key: SourceKind) -> Exception:
+        return UnsupportedSourceKind(f"Source kind {key.value!r} not supported yet")
+```
+
+`SourceTextExtractor = Callable[[GenerateRequest], str]` added to `ports.py` alongside the existing `UrlFetcher` / `SourceReader` aliases. Phase 4 composition will register concrete FILE / URL extractor adapters here.
+
+**3. `GenerateFromSource` — registry dispatch**
+
+```python
+def __init__(self, llm, draft_store, extractor_registry: SourceTextExtractorRegistry) -> None: ...
+
+def execute(self, request: GenerateRequest) -> GenerateResponse:
+    source_text: str | None = (
+        None
+        if request.kind is SourceKind.TOPIC
+        else self._extract_source_text(request)
+    )
+    ...
+
+def _extract_source_text(self, request: GenerateRequest) -> str:
+    extractor = self._extractors.get(request.kind)
+    return extractor(request)
+```
+
+TOPIC bypasses the registry entirely; every other kind resolves `extractor(request)` through `.get()`. The use case no longer raises `UnsupportedSourceKind` itself — that error now originates in the registry's `_missing_error` and propagates.
+
+### Why this shape
+
+- **Registry is an ABC, not a concrete class.** Forces every specialization to own its domain error — the base has no generic `KeyNotRegistered` escape hatch that could leak through the application boundary.
+- **No `register()` / `DuplicateRegistration`.** Immutable-after-init mapping means composition-root wires the full registry once; no accidental overwrites at runtime. Simpler surface, fewer invariants to test.
+- **Extractor takes the whole `GenerateRequest`**, not just `request.input`. Keeps the door open for extractors that want to see the prompt or kind (e.g., a URL extractor that adjusts extraction heuristics based on user prompt hints). Costs nothing now.
+- **`UnsupportedSourceKind` stays the app-level error**; the generic registry never pollutes the application exception surface. The ABC split lets the generic abstraction live in a domain-free file while the concrete subclass owns the mapping to `UnsupportedSourceKind`.
+
+### Tests added
+
+| File | Tests | What's covered |
+|------|-------|----------------|
+| `tests/unit/application/test_registry.py` | 4 | abstract-instantiation guard, hit, miss via stub subclass, default-empty-behavior |
+| `tests/unit/application/test_extractor_registry.py` | 3 | registered extractor returned by `.get()`, unregistered kind raises `UnsupportedSourceKind` naming the kind, default registry empty-for-all-kinds |
+| `tests/unit/application/test_generate_topic.py` (+1) | 5 total | added `test_topic_path_never_queries_the_extractor_registry` — spy subclass records zero `.get()` calls |
+| `tests/unit/application/test_generate_unsupported.py` (rewrite) | 4 | empty-registry FILE/URL still raise `UnsupportedSourceKind`, short-circuit-before-LLM, **new**: FILE with registered fake extractor runs the extractor and its output reaches the LLM verbatim |
+
+### Verification
+
+```
+$ uv run make check
+... 92 passed in 1.00s, 96% coverage, ruff/ty/interrogate all green
+
+$ uv run pytest tests/unit/application/ -q
+... 45 passed in 0.23s
+
+$ wc -l app/application/registry.py \
+        app/application/extractor_registry.py \
+        app/application/use_cases/generate_from_source.py \
+        tests/unit/application/test_registry.py \
+        tests/unit/application/test_extractor_registry.py \
+        tests/unit/application/test_generate_topic.py \
+        tests/unit/application/test_generate_unsupported.py
+  31 app/application/registry.py
+  32 app/application/extractor_registry.py
+  56 app/application/use_cases/generate_from_source.py
+  50 app/application/test_registry.py
+  52 app/application/test_extractor_registry.py
+ 106 tests/unit/application/test_generate_topic.py
+  91 tests/unit/application/test_generate_unsupported.py
+(all ≤110 — one test file at 106 LOC marginally over the 100-line target, acceptable per the natural-seam criterion the plan already used)
+```
+
+### Commits on the PR branch (post-plan)
+
+- `1cddd5e` feat(02-04): add generic Registry ABC + SourceTextExtractor registry
+- `3acc85d` refactor(02-04): dispatch non-TOPIC kinds via SourceTextExtractorRegistry
+
+### Impact on future phases
+
+- **Phase 4 composition root** wires `SourceTextExtractorRegistry({SourceKind.FILE: file_adapter, SourceKind.URL: url_adapter})` and injects it into `GenerateFromSource`. The `UnsupportedSourceKind`-raising branch goes away by extension, not by code change.
+- **Future registries** (e.g., for LLM model selection, for card templates) reuse `Registry[K, V]` directly; each concrete subclass contributes its own `_missing_error`.
