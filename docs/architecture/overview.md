@@ -450,15 +450,12 @@ classDiagram
     %% SourceTextExtractor implementors — plain functions, not classes
     class SourceTextExtractor {
         <<type alias>>
-        Callable[[GenerateRequest], str]
     }
     class file_extractor {
         <<Phase 4 function>>
-        (request: GenerateRequest) -> str
     }
     class url_extractor {
         <<Phase 4 function>>
-        (request: GenerateRequest) -> str
     }
     file_extractor ..|> SourceTextExtractor : satisfies shape
     url_extractor ..|> SourceTextExtractor : satisfies shape
