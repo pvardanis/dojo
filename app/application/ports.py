@@ -13,7 +13,12 @@ from app.domain.entities import Card, CardReview, Note, Source
 from app.domain.value_objects import CardId, NoteId, SourceId
 
 if TYPE_CHECKING:
-    from app.application.dtos import CardDTO, DraftBundle, NoteDTO
+    from app.application.dtos import (
+        CardDTO,
+        DraftBundle,
+        GenerateRequest,
+        NoteDTO,
+    )
 
 
 DraftToken = NewType("DraftToken", uuid.UUID)
@@ -96,3 +101,6 @@ type UrlFetcher = Callable[[str], str]
 
 # Path → raw-text reader (stateless). Phase 3 filesystem adapter.
 type SourceReader = Callable[[Path], str]
+
+# GenerateRequest → extracted text. Keyed by SourceKind in the registry.
+type SourceTextExtractor = Callable[[GenerateRequest], str]
