@@ -13,6 +13,7 @@ format:
 
 lint:
 	uv run ruff check --fix .
+	uv run lint-imports
 
 typecheck:
 	uv run ty check app

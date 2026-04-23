@@ -24,6 +24,7 @@ dev = [
     "ruff>=0.8",
     "ty==0.0.31",              # D-16: exact pin, still beta
     "interrogate>=1.7",
+    "import-linter>=2.0",      # Plan 02-05: domain/app boundary enforcement
     "pydoclint>=0.5",          # Sphinx :param:/:returns:/:raises: completeness
     "pytest>=8.3",
     "pytest-asyncio>=1.0",     # 1.0+ removed deprecated event_loop
@@ -104,3 +105,18 @@ exclude = '\.venv|migrations|tests|docs|build|dist'
 # D-16: pin exact patch; review release notes on every bump.
 # Detailed rules TBD — start with defaults, tighten when Phase 2
 # introduces real code.
+
+[tool.importlinter]
+root_package = "app"
+
+[[tool.importlinter.contracts]]
+name = "Domain must not depend on infrastructure or web"
+type = "forbidden"
+source_modules = ["app.domain"]
+forbidden_modules = ["app.infrastructure", "app.web"]
+
+[[tool.importlinter.contracts]]
+name = "Application must not depend on infrastructure or web"
+type = "forbidden"
+source_modules = ["app.application"]
+forbidden_modules = ["app.infrastructure", "app.web"]
