@@ -1,19 +1,27 @@
-# Phase 2 Architecture — Class & Flow Diagrams
+# Dojo v1 — Architecture Overview
 
-**Snapshot:** 2026-04-22 (Plans 01–04 locked; Plan 05 pending)
-**Scope:** Domain + Application layers. Infrastructure + Web shown as
-intended shape (Phase 3+).
+**Last updated:** 2026-04-23
+**Snapshot point:** Phase 2 (Plans 01–04 locked; Plan 05 pending)
+**Scope:** Full v1 architecture. Locked layers rendered green; pending
+layers (Phase 3 infrastructure, Phase 4+ web) rendered yellow.
 
-This document visualises the architecture Plan 02 is building — the
-pure inner core of Dojo — so you can see the types, ports, and
-orchestration at a glance. Three diagrams:
+This document is a **living v1 architecture overview**, updated as
+each phase lands. It consolidates what spec §DOCS-01 will eventually
+split into four canonical files under this folder (`layers.md`,
+`domain-model.md`, `flows.md`, `ports-and-adapters.md`). Phase 7
+refines + splits; until then, this single file carries the mental
+model.
+
+Five sections:
 
 1. **Layered dependency direction** — which layer may import which
 2. **Class diagram — domain layer** — entities + value objects
-3. **Class diagram — application layer** — DTOs, ports, use case,
-   with fakes + future Phase 3 adapters as implementors
-4. **Sequence diagram — GenerateFromSource TOPIC flow** — how the
+3. **Class diagram — application layer** — DTOs, ports, use case
+4. **Implementor diagram** — fakes (now) + Phase 3 adapters (planned)
+5. **Sequence diagram — GenerateFromSource TOPIC flow** — how the
    pieces collaborate on a single request
+
+Plus a file-to-plan map and a Phase-2-out-of-scope section at the end.
 
 ---
 
@@ -504,6 +512,10 @@ Knowing what the Protocols expect from them is important:
 
 ---
 
-*Snapshot generated: 2026-04-22*
-*Reflects Plans 01-04 as designed. Plan 05 adds the contract harness
-and import-linter boundary.*
+*Last updated: 2026-04-23. Snapshot point: Phase 2 (Plans 01–04
+locked; Plan 05 pending). Refresh per phase as new layers land.*
+
+*Relationship to spec §DOCS-01: Phase 7 will split this overview into
+four canonical files (`layers.md`, `domain-model.md`, `flows.md`,
+`ports-and-adapters.md`). Until then, this single file carries the
+mental model.*
