@@ -39,10 +39,11 @@ flowchart TD
     end
 
     subgraph Application["Application — Plans 02-04"]
-        ports["ports.py<br/>6 Protocols + 2 Callable aliases"]
+        ports["ports.py<br/>6 Protocols + 3 Callable aliases"]
         dtos["dtos.py<br/>Pydantic (LLM boundary)<br/>+ dataclass (internal)"]
+        registry["registry.py +<br/>extractor_registry.py<br/>Registry~K,V~ ABC +<br/>SourceTextExtractorRegistry"]
         usecase["GenerateFromSource<br/>(Plan 04)"]
-        appexc["exceptions.py<br/>UnsupportedSourceKind, …"]
+        appexc["exceptions.py<br/>UnsupportedSourceKind,<br/>ExtractorNotApplicable, …"]
     end
 
     subgraph Domain["Domain — Plan 01"]
@@ -62,7 +63,7 @@ flowchart TD
     classDef node fill:#ffffff,stroke:#94a3b8,color:#1a1a1a
     class Domain,Application locked
     class Web,Infrastructure pending
-    class routes,adapters,ports,dtos,usecase,appexc,entities,vos,domexc node
+    class routes,adapters,ports,dtos,registry,usecase,appexc,entities,vos,domexc node
 ```
 
 **Dependency rule:** arrows only flow inward. Domain imports nothing
@@ -268,16 +269,36 @@ classDiagram
         <<type alias>>
         Callable[[Path], str]
     }
+    class SourceTextExtractor {
+        <<type alias>>
+        Callable[[GenerateRequest], str]
+    }
+
+    %% Registry abstraction (Plan 04 post-plan refactor)
+    class Registry~K, V~ {
+        <<abstract>>
+        _entries: Mapping[K, V]
+        get(key: K) -> V
+        _missing_error(key: K) -> Exception*
+    }
+    class SourceTextExtractorRegistry {
+        <<Registry[SourceKind, SourceTextExtractor]>>
+        _missing_error(key: SourceKind) -> Exception
+    }
 
     %% Use case
     class GenerateFromSource {
         llm: LLMProvider
         draft_store: DraftStore
+        extractor_registry: SourceTextExtractorRegistry
         execute(request: GenerateRequest) -> GenerateResponse
     }
 
     %% Application exceptions
     class UnsupportedSourceKind {
+        <<DojoError>>
+    }
+    class ExtractorNotApplicable {
         <<DojoError>>
     }
     class LLMOutputMalformed {
@@ -293,20 +314,37 @@ classDiagram
     GenerateResponse *-- DraftToken
     GenerateResponse *-- DraftBundle
 
-    %% Use case depends on Protocols (DIP)
+    %% Registry specialization
+    SourceTextExtractorRegistry --|> Registry~K, V~ : extends
+    SourceTextExtractorRegistry o-- SourceTextExtractor : holds by SourceKind
+
+    %% Use case depends on Protocols + registry (DIP)
     GenerateFromSource ..> LLMProvider : depends on
     GenerateFromSource ..> DraftStore : depends on
+    GenerateFromSource ..> SourceTextExtractorRegistry : depends on
     GenerateFromSource ..> GenerateRequest : accepts
     GenerateFromSource ..> GenerateResponse : produces
-    GenerateFromSource ..> UnsupportedSourceKind : raises
+
+    %% Error mappings (raised by the registry, propagates through the use case)
+    SourceTextExtractorRegistry ..> ExtractorNotApplicable : raises (key=TOPIC)
+    SourceTextExtractorRegistry ..> UnsupportedSourceKind : raises (other miss)
 ```
 
 **Reading this:**
 - Protocols are **not base classes** — implementors satisfy them
   structurally (duck typing verified at type-check time by `ty`)
-- `GenerateFromSource` holds **Protocols**, not concrete adapters
-  (DIP). Composition root in `app/main.py` (Phase 4+) will wire real
-  adapters or fakes into this use case
+- `GenerateFromSource` holds **Protocols and a registry**, not concrete
+  adapters (DIP). Composition root in `app/main.py` (Phase 4+) will
+  wire real adapters or fakes into this use case, and register the
+  concrete `SourceTextExtractor`s for FILE / URL into the registry
+- The `Registry[K, V]` ABC is generic and domain-free; concrete
+  subclasses own their missing-key error via `_missing_error`. Reuse
+  is expected — future keyed-dispatch domains subclass the same ABC
+- `TOPIC` **bypasses the registry entirely** — the use case sets
+  `source_text=None` without consulting the extractor registry. A
+  `TOPIC` lookup is treated as a category mismatch
+  (`ExtractorNotApplicable`), not a "not wired yet" state
+  (`UnsupportedSourceKind`)
 - DTO layer is split by trust boundary:
   - **Pydantic DTOs** (`NoteDTO`, `CardDTO`, `GeneratedContent`)
     validate untrusted LLM tool-use output
@@ -408,6 +446,22 @@ classDiagram
     SqlCardRepository ..|> CardRepository : structural
     SqlCardReviewRepository ..|> CardReviewRepository : structural
     InMemoryDraftStore ..|> DraftStore : structural
+
+    %% SourceTextExtractor implementors — plain functions, not classes
+    class SourceTextExtractor {
+        <<type alias>>
+        Callable[[GenerateRequest], str]
+    }
+    class file_extractor {
+        <<Phase 4 function>>
+        (request: GenerateRequest) -> str
+    }
+    class url_extractor {
+        <<Phase 4 function>>
+        (request: GenerateRequest) -> str
+    }
+    file_extractor ..|> SourceTextExtractor : satisfies shape
+    url_extractor ..|> SourceTextExtractor : satisfies shape
 ```
 
 **Reading this:**
@@ -420,6 +474,19 @@ classDiagram
 - When you add a new concrete adapter (Phase 3+), no Protocol changes
   are needed. That's the value of "add a class + one line in the
   composition root"
+- **`SourceTextExtractor` implementors are plain functions, not
+  classes.** The port is a `Callable` type alias, not a `Protocol` —
+  per the project rule (stateless single-op → typed Callable, never a
+  class-like abstraction). In the diagram above `file_extractor` /
+  `url_extractor` appear in "class boxes" because Mermaid's class
+  diagram is the only shape available; the real implementations are
+  free-standing `def`s that match the Callable signature
+- **`SourceTextExtractor` has no implementors in Phase 2.** The
+  registry is constructed empty today; FILE and URL extractor
+  functions land in Phase 4 and are registered at the composition root
+  keyed by `SourceKind`. Adding a new extractor kind never edits the
+  use case — just register one more entry in the
+  `SourceTextExtractorRegistry` mapping
 
 ---
 
@@ -435,41 +502,58 @@ sequenceDiagram
 
     participant User as Caller<br/>(test or Phase 4 route)
     participant UC as GenerateFromSource
+    participant Reg as SourceTextExtractorRegistry
     participant LLM as LLMProvider<br/>(Protocol)
     participant Store as DraftStore<br/>(Protocol)
 
     User->>+UC: execute(GenerateRequest)<br/>kind=TOPIC<br/>user_prompt="intro to k8s"
 
-    alt kind == TOPIC
+    alt kind == TOPIC (bypasses registry by design)
+        UC->>UC: source_text = None
         UC->>+LLM: generate_note_and_cards(<br/>source_text=None,<br/>user_prompt="intro to k8s")
         LLM-->>-UC: (NoteDTO, list~CardDTO~)
 
         UC->>UC: mint DraftToken (uuid4)
-        UC->>UC: construct Note(title, content_md, source_id)
-        UC->>UC: construct list~Card~ (one per CardDTO)
-        UC->>UC: build DraftBundle(note, cards)
+        UC->>UC: build DraftBundle(NoteDTO, list~CardDTO~)
 
         UC->>+Store: put(token, bundle)
         Store-->>-UC: (ok)
 
         UC-->>-User: GenerateResponse(token, bundle)
 
-    else kind in {FILE, URL}
-        UC-->>User: raise UnsupportedSourceKind
+    else kind in {FILE, URL} — Phase 2: registry empty
+        UC->>+Reg: get(request.kind)
+        Reg-->>UC: raise UnsupportedSourceKind<br/>("Source kind 'file'/'url'<br/>not supported yet")
+        UC-->>User: (propagates)
+
+    else kind == TOPIC routed to registry (programmer bug)
+        Note over UC, Reg: should never fire —<br/>TOPIC short-circuits above
+        Reg-->>UC: raise ExtractorNotApplicable
+        UC-->>User: (propagates)
     end
 
-    Note over User, Store: Later (Phase 4):<br/>User → SaveDraft use case<br/>→ DraftStore.pop(token)<br/>→ atomic save Source+Note+Cards via repos
+    Note over User, Store: Phase 4:<br/>Reg is wired at composition root with<br/>FILE + URL SourceTextExtractors.<br/>"registry empty" branch above lights up into:<br/>UC→Reg.get→extractor(request)→source_text→LLM.<br/>Separate SaveDraft use case → DraftStore.pop(token)<br/>→ atomic save Source+Note+Cards via repos.
 ```
 
 **Reading this:**
+- TOPIC is the only kind wired in Phase 2, and it **bypasses the
+  registry entirely** via a ternary in `execute()`. The registry
+  participant exists but is untouched on the TOPIC path
+- For FILE / URL in Phase 2, the registry is empty, so `get(kind)`
+  raises `UnsupportedSourceKind` and the use case propagates it
+  unchanged — no local `raise` inside `GenerateFromSource`
+- `ExtractorNotApplicable` is the error the registry returns for a
+  `TOPIC` lookup (a category mismatch — `TOPIC` has no extractor
+  by design). It's listed as a third `else` for completeness;
+  correct callers never trigger it because the use case short-circuits
+  `TOPIC` before consulting the registry
 - LLM is called with `source_text=None` for TOPIC (no external source
-  snapshot; LLM draws on its own knowledge)
+  snapshot; LLM draws on its own knowledge). Phase 4 FILE / URL flows
+  call `source_text=<extracted>` instead
 - `DraftToken` is minted by the use case, not passed in (server owns
   the key per PITFALL C10)
 - `DraftStore.put` is the one-shot write; later pickup is `pop` which
   is atomic read-and-delete (no race with a concurrent save)
-- FILE / URL branches raise before any expensive side effect —
-  unsupported kinds fail fast
 
 ---
 
@@ -518,34 +602,70 @@ Phase 4). This is also what makes the TEST-03 contract-test harness
 possible: one suite parametrized over `[fake, real]`, both satisfying
 the same Protocol.
 
-**`UrlFetcher`, `SourceReader`** (Callable type aliases, not
-Protocols) — stateless, single-operation ports. `UrlFetcher` is
-`str -> str` (fetch a URL, return extracted text); `SourceReader` is
-`Path -> str` (read a file, return its content). We don't need a
-full class-like abstraction for something this small, so a Callable
-alias is more honest. Reach for `Protocol` only when the port has
-state, multiple methods, or clear growth pressure (see project
-`CLAUDE.md` Protocol-vs-function clarifier).
+**`UrlFetcher`, `SourceReader`, `SourceTextExtractor`** (Callable
+type aliases, not Protocols) — stateless, single-operation ports.
+`UrlFetcher` is `str -> str` (fetch a URL, return extracted text);
+`SourceReader` is `Path -> str` (read a file, return its content);
+`SourceTextExtractor` is `GenerateRequest -> str` (the uniform shape
+the use case's registry keys by `SourceKind`). In Phase 4
+composition, `UrlFetcher` and `SourceReader` are the low-level
+adapter ports; the `SourceTextExtractor` functions wired into the
+registry compose them (`url_extractor` calls the fetcher,
+`file_extractor` wraps the reader with `Path(request.input)`).
+We don't need a full class-like abstraction for something this
+small, so a Callable alias is more honest. Reach for `Protocol`
+only when the port has state, multiple methods, or clear growth
+pressure (see project `CLAUDE.md` Protocol-vs-function clarifier).
+
+**`Registry[K, V]`** — generic `ABC` in `app/application/registry.py`
+(PEP 695 syntax, `K` bound to `Hashable`). Holds an immutable
+`Mapping[K, V]` supplied at construction (`MappingProxyType({})`
+default, so no mutable-default trap), exposes a single public `.get`,
+and delegates the missing-key error to subclasses via the abstract
+`_missing_error(key) -> Exception`. No `register()` / mutation API —
+the full mapping is wired once at the composition root. The
+abstraction is domain-free on purpose; future keyed-dispatch concepts
+(LLM model selection, card templates, etc.) subclass the same ABC
+and own their own domain-specific error type.
+
+**`SourceTextExtractorRegistry`** — the concrete
+`Registry[SourceKind, SourceTextExtractor]` consumed by
+`GenerateFromSource`. Maps missing-key lookups to the right domain
+error: `TOPIC` → `ExtractorNotApplicable` (category mismatch —
+`TOPIC` has no extractor by design; the caller should have bypassed
+the registry), every other unregistered kind →
+`UnsupportedSourceKind` (not-wired-yet state, Phase 2 reality for
+FILE / URL). Constructed empty in Phase 2 tests; Phase 4 composition
+root populates it with the two Phase 4 extractor functions.
 
 **`GenerateFromSource`** — the use case class. Constructor-injected
-Protocols (`llm`, `draft_store`) make testing trivial (pass fakes in
-the test; pass real adapters in production via the composition root).
-Why a class, not a function? It holds state (the injected deps)
-across calls. `execute(request)` is the single public entry point;
-internal helpers are private methods on the class. When the FILE /
-URL branches light up in Phase 4, they'll take additional injected
-ports (`SourceReader`, `UrlFetcher`) in the same constructor.
+Protocols + registry (`llm: LLMProvider`, `draft_store: DraftStore`,
+`extractor_registry: SourceTextExtractorRegistry`) make testing
+trivial (pass fakes + an empty registry in the test; pass real
+adapters + a populated registry in production via the composition
+root). Why a class, not a function? It holds state (the injected
+deps) across calls. `execute(request)` is the single public entry
+point; non-TOPIC dispatch is delegated to `_extract_source_text` →
+`extractor_registry.get(kind)` → `extractor(request)`. TOPIC
+bypasses the registry entirely (source text is `None` by design).
+Adding a new source kind in the future is a one-line registration at
+the composition root — never an edit to this class.
 
-**`DojoError` → `UnsupportedSourceKind` / `LLMOutputMalformed` /
-`DraftExpired`** — exception hierarchy with one root so the
-FastAPI exception handler in Phase 4 can catch `DojoError` broadly
-and map each subclass to an HTTP response. `UnsupportedSourceKind`
-fires from the use case (kind-coherence check at the external-input
-boundary); `LLMOutputMalformed` fires from the Phase 3 Anthropic
-adapter (Pydantic DTO validation failure); `DraftExpired` fires
-from the Phase 3 `InMemoryDraftStore` on a post-TTL access. The
-hierarchy stays thin on purpose — more subclasses land only when a
-caller actually needs to branch on the error type.
+**`DojoError` → `UnsupportedSourceKind` / `ExtractorNotApplicable` /
+`LLMOutputMalformed` / `DraftExpired`** — exception hierarchy with
+one root so the FastAPI exception handler in Phase 4 can catch
+`DojoError` broadly and map each subclass to an HTTP response.
+`UnsupportedSourceKind` fires from `SourceTextExtractorRegistry`
+on a FILE / URL lookup with no extractor registered (Phase 2
+state). `ExtractorNotApplicable` fires from the same registry on
+a `TOPIC` lookup — a programmer error, since `TOPIC` must bypass
+the registry by design; the separate type lets callers distinguish
+"feature not wired yet" from "you called the wrong thing."
+`LLMOutputMalformed` fires from the Phase 3 Anthropic adapter
+(Pydantic DTO validation failure); `DraftExpired` fires from the
+Phase 3 `InMemoryDraftStore` on a post-TTL access. The hierarchy
+stays thin on purpose — more subclasses land only when a caller
+actually needs to branch on the error type.
 
 ---
 
@@ -559,11 +679,14 @@ caller actually needs to branch on the error type.
 | Protocols + Callables + DraftToken | `app/application/ports.py` | 02 |
 | Pydantic + dataclass DTOs | `app/application/dtos.py` | 02 |
 | App exceptions | `app/application/exceptions.py` | 02 |
+| Generic `Registry[K, V]` ABC | `app/application/registry.py` | 04 |
+| `SourceTextExtractorRegistry` | `app/application/extractor_registry.py` | 04 |
 | `GenerateFromSource` use case | `app/application/use_cases/generate_from_source.py` | 04 |
 | Hand-written fakes | `tests/fakes/fake_*.py` | 03 |
 | Unit tests per fake | `tests/unit/fakes/test_fake_*.py` | 03 |
 | Unit tests per entity | `tests/unit/domain/test_*.py` | 01 |
 | Unit tests per DTO / port / exception | `tests/unit/application/test_*.py` | 02 |
+| Registry ABC + extractor-registry tests | `tests/unit/application/test_registry.py`, `test_extractor_registry.py` | 04 |
 | Use-case orchestration tests | `tests/unit/application/test_generate_*.py` | 04 |
 | Contract-test harness + import-linter | `tests/contract/`, `.importlinter` | 05 (pending) |
 
@@ -583,8 +706,13 @@ Knowing what the Protocols expect from them is important:
   + lazy TTL eviction + 30-min expiry. Port contract documents the
   semantics; the adapter enforces them.
 - **URL + file source reading** — `fetch_url` (httpx + trafilatura)
-  and `read_file` (stdlib Path). Wired into the use case in Phase 4
-  when FILE / URL branches light up.
+  adapter + `read_file` (stdlib Path) adapter, plus the two
+  `SourceTextExtractor` functions (`file_extractor`,
+  `url_extractor`) that wrap them into the uniform
+  `Callable[[GenerateRequest], str]` shape the registry holds. The
+  composition root registers them keyed by `SourceKind`; the use
+  case picks them up automatically via `extractor_registry.get(kind)`
+  — no `GenerateFromSource` edit needed when they land.
 - **Atomic save** — separate `SaveDraft` use case that pops from the
   draft store and writes Source + Note + Cards in one transaction.
   Phase 4.
