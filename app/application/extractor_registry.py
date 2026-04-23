@@ -7,7 +7,10 @@ from __future__ import annotations
 from collections.abc import Mapping
 from types import MappingProxyType
 
-from app.application.exceptions import UnsupportedSourceKind
+from app.application.exceptions import (
+    ExtractorNotApplicable,
+    UnsupportedSourceKind,
+)
 from app.application.ports import SourceTextExtractor
 from app.application.registry import Registry
 from app.domain.value_objects import SourceKind
@@ -26,7 +29,18 @@ class SourceTextExtractorRegistry(Registry[SourceKind, SourceTextExtractor]):
         super().__init__(entries=extractors)
 
     def _missing_error(self, key: SourceKind) -> Exception:
-        """Return UnsupportedSourceKind for an unregistered kind."""
+        """Map a missing kind to its domain-appropriate error.
+
+        ``TOPIC`` has no extractor by design (source text is ``None``);
+        asking the registry for it is a category mismatch and raises
+        ``ExtractorNotApplicable``. Every other unregistered kind is a
+        "not wired yet" state and raises ``UnsupportedSourceKind``.
+        """
+        if key is SourceKind.TOPIC:
+            return ExtractorNotApplicable(
+                "TOPIC has no extractor — source_text is None by design;"
+                " callers must bypass the registry for TOPIC"
+            )
         return UnsupportedSourceKind(
             f"Source kind {key.value!r} not supported yet"
         )

@@ -1,5 +1,5 @@
-# ABOUTME: Tests for SourceTextExtractorRegistry — lookup + missing-kind error.
-# ABOUTME: Missing-key path asserts the UnsupportedSourceKind mapping.
+# ABOUTME: Tests for SourceTextExtractorRegistry lookup + miss errors.
+# ABOUTME: TOPIC → ExtractorNotApplicable; others → UnsupportedSourceKind.
 """SourceTextExtractorRegistry unit tests."""
 
 from __future__ import annotations
@@ -7,7 +7,10 @@ from __future__ import annotations
 import pytest
 
 from app.application.dtos import GenerateRequest
-from app.application.exceptions import UnsupportedSourceKind
+from app.application.exceptions import (
+    ExtractorNotApplicable,
+    UnsupportedSourceKind,
+)
 from app.application.extractor_registry import (
     SourceTextExtractorRegistry,
 )
@@ -43,9 +46,18 @@ def test_unregistered_kind_raises_unsupported_source_kind() -> None:
         registry.get(SourceKind.URL)
 
 
-def test_default_registry_is_empty_for_every_kind() -> None:
-    """With no extractors supplied, every kind lookup fails."""
+def test_topic_lookup_raises_extractor_not_applicable() -> None:
+    """TOPIC has no extractor by design — lookup is a category mismatch."""
     registry = SourceTextExtractorRegistry()
 
-    with pytest.raises(UnsupportedSourceKind):
+    with pytest.raises(ExtractorNotApplicable, match="TOPIC"):
         registry.get(SourceKind.TOPIC)
+
+
+def test_topic_error_is_not_unsupported_source_kind() -> None:
+    """The TOPIC error is distinct from the "not wired yet" error type."""
+    registry = SourceTextExtractorRegistry()
+
+    with pytest.raises(ExtractorNotApplicable) as excinfo:
+        registry.get(SourceKind.TOPIC)
+    assert not isinstance(excinfo.value, UnsupportedSourceKind)
