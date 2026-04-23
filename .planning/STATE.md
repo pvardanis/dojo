@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 2 Wave 3 — plan 03 (hand-written fakes) landed; ready to open PR
-last_updated: "2026-04-22T11:17:00.000Z"
-last_activity: 2026-04-22 -- Phase 2 Plan 03 (hand-written fakes) complete on phase-02-plan-03-hand-written-fakes
+stopped_at: Phase 2 Wave 4 — plan 04 (GenerateFromSource use case) landed; ready to open PR
+last_updated: "2026-04-22T11:42:00.000Z"
+last_activity: 2026-04-22 -- Phase 2 Plan 04 (GenerateFromSource use case) complete on phase-02-plan-04-generate-from-source-use-case
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 6
-  completed_plans: 9
-  percent: 20
+  completed_plans: 10
+  percent: 22
 ---
 
 # Project State
@@ -21,35 +21,35 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-18)
 
 **Core value:** Generate Q&A cards from user-supplied source material, drill them interactively, retain knowledge. The generate → drill → learn loop must work even if everything else fails.
-**Current focus:** Phase 2 — Domain & Application Spine (executing, Wave 3)
+**Current focus:** Phase 2 — Domain & Application Spine (executing, Wave 4)
 
 ## Current Position
 
 Phase: 2 of 7 — executing
-Plan: 3 of 5 complete — hand-written fakes landed on branch phase-02-plan-03-hand-written-fakes; awaiting PR merge before Plan 04 begins
-Status: Plan 02-03 delivered 6 hand-written fakes under tests/fakes/ (FakeLLMProvider, FakeSourceRepository, FakeNoteRepository, FakeCardRepository, FakeCardReviewRepository, FakeDraftStore with force_expire TTL hook) + re-export __init__.py + 7 unit-test files (23 tests) including a structural-subtype smoke test. Structural subtyping only (no Protocol inheritance, no @runtime_checkable); zero Mock() usage; public-attribute assertion style (.saved/.puts/.calls_with/.next_response). make check clean (76 tests, 96% coverage); closes Phase 2 SC #4 + DRAFT-01 + TEST-01.
-Last activity: 2026-04-22 -- Plan 02-03 complete; SUMMARY.md + STATE + ROADMAP updated
+Plan: 4 of 5 complete — GenerateFromSource use case landed on branch phase-02-plan-04-generate-from-source-use-case; awaiting PR merge before Plan 05 begins
+Status: Plan 02-04 delivered app/application/use_cases/generate_from_source.py (45 LOC: class GenerateFromSource with __init__(llm, draft_store) and execute(request) -> GenerateResponse; TOPIC branch calls LLMProvider.generate_note_and_cards(source_text=None, user_prompt=...), wraps the result in a DraftBundle, mints DraftToken(uuid.uuid4()), puts the bundle in the DraftStore, returns GenerateResponse; FILE/URL raise UnsupportedSourceKind with the kind value embedded) + 2 split test files (test_generate_topic.py 4 tests + test_generate_unsupported.py 3 tests = 7 end-to-end tests against FakeLLMProvider + FakeDraftStore). make check clean (83 tests, 96% coverage); discharges Phase 2 SC #3.
+Last activity: 2026-04-22 -- Plan 02-04 complete; SUMMARY.md + STATE + ROADMAP updated
 
-Progress: [██░░░░░░░░] 20%
+Progress: [██░░░░░░░░] 22%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 9 (6 Phase 1 + 3 Phase 2)
-- Average duration: ~16 min (Phase 2 portion)
-- Total execution time: ~48 min (Phase 2 portion)
+- Total plans completed: 10 (6 Phase 1 + 4 Phase 2)
+- Average duration: ~13 min (Phase 2 portion)
+- Total execution time: ~51 min (Phase 2 portion)
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 2     | 3     | ~48m  | ~16 min  |
+| 2     | 4     | ~51m  | ~13 min  |
 
 **Recent Trend:**
 
-- Last 5 plans: Phase 2 Plan 01 (domain entities), Phase 2 Plan 02 (application ports + DTOs), Phase 2 Plan 03 (hand-written fakes)
-- Trend: on-plan; one Rule-3 deviation on Plan 03 (plan test-skeletons used obsolete NoteDTO(content=...) + Source without display_name; every test fixture corrected to Plan 01/02 actual signatures before first pytest run); RED+GREEN merged per fake per project commit convention (six commits total)
+- Last 5 plans: Phase 2 Plan 01 (domain entities), Phase 2 Plan 02 (application ports + DTOs), Phase 2 Plan 03 (hand-written fakes), Phase 2 Plan 04 (GenerateFromSource use case)
+- Trend: on-plan; Plan 04 landed in ~3 min (fastest of Phase 2) with zero Rule deviations — split-file sizing flag was the only plan-flagged seam, applied as the plan directed. RED+GREEN merged into one commit per the Plan 02-01 convention override.
 
 *Updated after each plan completion*
 
@@ -79,6 +79,10 @@ Recent decisions affecting current work:
 - 02-03: Assertion style is public-attribute state (`.saved`, `.puts`, `.calls_with`, `.next_response`), NOT Mock().assert_called_with. Zero `unittest.mock` imports anywhere under `tests/fakes/` or `tests/unit/fakes/`. `FakeLLMProvider.next_response` is mutable so tests simulate failure modes (malformed output, empty cards) by pre-seeding — no Mock.side_effect needed.
 - 02-03: `force_expire(token)` TTL test hook lives on `FakeDraftStore`, NOT on the `DraftStore` Protocol (D-05). Port surface stays clean (`put` + `pop` only); tests that need the expiry path call `force_expire` instead of advancing wall-clock. Phase 3's `InMemoryDraftStore` will own real TTL logic + `asyncio.Lock`.
 - 02-03: Shared dict-by-id shape across `FakeSourceRepository` / `FakeNoteRepository` / `FakeCardRepository` was NOT extracted to a `_BaseDictRepository[K, V]` superclass — YAGNI, each fake ≤24 lines, shared base would save ~10 lines at the cost of one more layer of indirection when a reader scans for single-fake behavior.
+- 02-04: `GenerateFromSource.__init__` takes `llm: LLMProvider` and `draft_store: DraftStore` only — NOT the four repository ports. The Phase 2 `execute()` path only touches those two ports and RESEARCH §3.8 Green bullet is explicit ("if not used by execute() they're omitted until needed"). Phase 4 extends `__init__` when Save wiring arrives; extending the signature later is a one-line change at the composition root.
+- 02-04: Kind-coherence validation lives in the use case's `execute()`, not in `GenerateRequest` or the domain. `GenerateRequest` is a plain frozen stdlib dataclass with no `__post_init__`; `execute()` is the first boundary that sees `request.kind` + `request.input` together, making it the right place to enforce the TOPIC-has-no-input and FILE/URL-must-go-through-real-adapters rules. Per the 02-01 "validation at boundary layers" decision. Phase 4 replaces the FILE/URL raises with real `SourceReader` / `UrlFetcher` calls.
+- 02-04: Per-kind dispatch is a two-branch `if` (TOPIC vs. `raise UnsupportedSourceKind`), NOT a strategy table. RESEARCH §3.8 Refactor is explicit that pre-designing a dispatch as a strategy table is YAGNI — the current shape extends cleanly when Phase 4 replaces the raise with FILE + URL branches.
+- 02-04: `test_generate_from_source.py` was split into `test_generate_topic.py` (4 TOPIC-path tests, 75 LOC) + `test_generate_unsupported.py` (3 raise-path tests, 62 LOC) per the PATTERNS.md sizing flag — the plan explicitly flagged 100 LOC as the ceiling and provided the target filenames. Split is along a natural behavioral seam (happy-path vs. raise-path).
 
 ### Pending Todos
 
@@ -103,6 +107,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-04-22T11:17:00.000Z
-Stopped at: Phase 2 Plan 03 complete on phase-02-plan-03-hand-written-fakes; push + open PR, then start Plan 04 (GenerateFromSource use case)
-Resume file: .planning/phases/02-domain-application-spine/02-04-generate-from-source-use-case-PLAN.md
+Last session: 2026-04-22T11:42:00.000Z
+Stopped at: Phase 2 Plan 04 complete on phase-02-plan-04-generate-from-source-use-case; push + open PR, then start Plan 05 (TEST-03 contract harness + import-linter boundary enforcement)
+Resume file: .planning/phases/02-domain-application-spine/02-05-contract-harness-import-linter-PLAN.md
