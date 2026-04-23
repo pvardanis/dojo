@@ -231,31 +231,31 @@ classDiagram
     %% Ports (Protocols — no @runtime_checkable)
     class LLMProvider {
         <<Protocol>>
-        generate_note_and_cards(source_text, user_prompt) -> tuple
+        generate_note_and_cards(source_text: str | None, user_prompt: str) -> tuple[NoteDTO, list[CardDTO]]
     }
     class SourceRepository {
         <<Protocol>>
-        save(source) -> None
-        get(id) -> Source | None
+        save(source: Source) -> None
+        get(source_id: SourceId) -> Source | None
     }
     class NoteRepository {
         <<Protocol>>
-        save(note) -> None
-        get(id) -> Note | None
+        save(note: Note) -> None
+        get(note_id: NoteId) -> Note | None
     }
     class CardRepository {
         <<Protocol>>
-        save(card) -> None
-        get(id) -> Card | None
+        save(card: Card) -> None
+        get(card_id: CardId) -> Card | None
     }
     class CardReviewRepository {
         <<Protocol>>
-        save(review) -> None
+        save(review: CardReview) -> None
     }
     class DraftStore {
         <<Protocol>>
-        put(token, bundle) -> None
-        pop(token) -> DraftBundle | None
+        put(token: DraftToken, bundle: DraftBundle) -> None
+        pop(token: DraftToken) -> DraftBundle | None
     }
 
     %% Callable aliases (stateless)
@@ -272,7 +272,7 @@ classDiagram
     class GenerateFromSource {
         llm: LLMProvider
         draft_store: DraftStore
-        execute(request) -> GenerateResponse
+        execute(request: GenerateRequest) -> GenerateResponse
     }
 
     %% Application exceptions
@@ -370,7 +370,7 @@ classDiagram
     class FakeDraftStore {
         <<fake>>
         puts: list
-        force_expire(token) -> None
+        force_expire(token: DraftToken) -> None
     }
 
     %% Real adapters — Phase 3 (planned)
