@@ -15,8 +15,8 @@ async def home(request: Request) -> HTMLResponse:
     """Render the minimal Dojo home page.
 
     :param request: Incoming FastAPI request; used to resolve the
-        Jinja2 templates registered on ``app.state``.
-    :returns: The rendered ``home.html`` response.
+        Jinja2 templates registered on `app.state`.
+    :returns: The rendered `home.html` response.
     """
     templates = request.app.state.templates
     return templates.TemplateResponse(
@@ -28,6 +28,6 @@ async def home(request: Request) -> HTMLResponse:
 async def health() -> dict[str, str]:
     """Return a lightweight health probe JSON payload.
 
-    :returns: ``{"status": "ok"}`` for liveness checks.
+    :returns: `{"status": "ok"}` for liveness checks.
     """
     return {"status": "ok"}

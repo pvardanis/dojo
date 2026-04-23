@@ -34,7 +34,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         not attach state to it at startup.
     :yields: Control back to FastAPI for the serving phase; no state
         is yielded to the caller.
-    :raises RuntimeError: If ``DOJO_ENV=prod`` and the Anthropic API
+    :raises RuntimeError: If `DOJO_ENV=prod` and the Anthropic API
         key is still the dev placeholder.
     """
     settings = get_settings()
@@ -62,9 +62,9 @@ def _guard_api_key(api_key: str) -> None:
 
 
 def create_app() -> FastAPI:
-    """Build the FastAPI app. Called by uvicorn via ``app.main:app``.
+    """Build the FastAPI app. Called by uvicorn via `app.main:app`.
 
-    :returns: A fully-wired ``FastAPI`` instance with templates,
+    :returns: A fully-wired `FastAPI` instance with templates,
         static files, and routers attached.
     """
     app = FastAPI(title="Dojo", lifespan=lifespan)

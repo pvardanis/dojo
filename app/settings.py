@@ -55,8 +55,8 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """Return the app's singleton settings (cached).
 
-    :returns: The process-wide ``Settings`` instance loaded from
-        environment variables + ``.env`` on first call; subsequent
+    :returns: The process-wide `Settings` instance loaded from
+        environment variables + `.env` on first call; subsequent
         calls return the cached instance.
     """
     # pydantic-settings loads fields from env/.env at call time; the
