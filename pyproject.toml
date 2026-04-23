@@ -120,3 +120,9 @@ name = "Application must not depend on infrastructure or web"
 type = "forbidden"
 source_modules = ["app.application"]
 forbidden_modules = ["app.infrastructure", "app.web"]
+
+[[tool.importlinter.contracts]]
+name = "Domain must not depend on application"
+type = "forbidden"
+source_modules = ["app.domain"]
+forbidden_modules = ["app.application"]

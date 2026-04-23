@@ -1,5 +1,5 @@
 # ABOUTME: TEST-03 contract harness — asserts Protocol shape for LLM port.
-# ABOUTME: Fake leg always runs; anthropic leg auto-skips (import + env).
+# ABOUTME: Fake leg always runs; anthropic leg auto-skips (env + import).
 """LLMProvider contract tests — shared across fake and real impls."""
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ def llm_provider(request: pytest.FixtureRequest):
         yield FakeLLMProvider()
         return
 
-    if not os.getenv("RUN_LLM_TESTS"):
+    if os.getenv("RUN_LLM_TESTS", "").lower() not in ("1", "true", "yes"):
         pytest.skip("RUN_LLM_TESTS not set")
     adapter_module = pytest.importorskip(
         "app.infrastructure.llm.anthropic_provider"
