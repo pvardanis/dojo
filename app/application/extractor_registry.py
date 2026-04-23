@@ -25,7 +25,13 @@ class SourceTextExtractorRegistry(Registry[SourceKind, SourceTextExtractor]):
             MappingProxyType({})
         ),
     ) -> None:
-        """Register extractors keyed by source kind."""
+        """Register extractors keyed by source kind.
+
+        :param extractors: Mapping of ``SourceKind`` to its extractor
+            callable. Defaults empty; in Phase 2 the registry is wired
+            empty and only FILE/URL lookups raise. Phase 4's composition
+            root supplies the real FILE/URL extractors here.
+        """
         super().__init__(entries=extractors)
 
     def _missing_error(self, key: SourceKind) -> Exception:
@@ -35,6 +41,10 @@ class SourceTextExtractorRegistry(Registry[SourceKind, SourceTextExtractor]):
         asking the registry for it is a category mismatch and raises
         ``ExtractorNotApplicable``. Every other unregistered kind is a
         "not wired yet" state and raises ``UnsupportedSourceKind``.
+
+        :param key: The unregistered ``SourceKind`` that was looked up.
+        :returns: ``ExtractorNotApplicable`` when ``key`` is ``TOPIC``;
+            otherwise ``UnsupportedSourceKind`` naming the kind value.
         """
         if key is SourceKind.TOPIC:
             return ExtractorNotApplicable(
