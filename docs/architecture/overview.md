@@ -12,7 +12,7 @@ split into four canonical files under this folder (`layers.md`,
 refines + splits; until then, this single file carries the mental
 model.
 
-Five sections:
+Six sections:
 
 1. **Layered dependency direction** — which layer may import which
 2. **Class diagram — domain layer** — entities + value objects
@@ -20,6 +20,7 @@ Five sections:
 4. **Implementor diagram** — fakes (now) + Phase 3 adapters (planned)
 5. **Sequence diagram — GenerateFromSource TOPIC flow** — how the
    pieces collaborate on a single request
+6. **Class purposes (glossary)** — one paragraph per non-obvious class
 
 Plus a file-to-plan map and a Phase-2-out-of-scope section at the end.
 
@@ -472,7 +473,83 @@ sequenceDiagram
 
 ---
 
-## 6. Where the pieces live (file map)
+## 6. What each class is for (glossary)
+
+One paragraph per non-obvious class. Skips the self-evident ones
+(`Source`, `Note`, `Card`, `CardReview`, `SourceKind`, `Rating`, the
+`*Id` NewTypes — names speak for themselves).
+
+**`DraftToken` / `DraftBundle` / `DraftStore`** — the three pieces of
+the "generate → review → save" flow. The LLM produces content
+immediately; the user decides later whether to save. `DraftBundle`
+holds that in-flight content (`Note` + `list[Card]`), `DraftToken`
+is its opaque handle, and `DraftStore` is the in-memory holder
+keyed by token with 30-min TTL. The save use case (Phase 4) pops the
+bundle by token and writes everything atomically. If the user closes
+the tab, the draft expires and nothing hits the DB — no orphan rows.
+`DraftToken` is a NewType (not raw UUID) so `ty` catches mixing it
+with entity IDs.
+
+**`NoteDTO` / `CardDTO` / `GeneratedContent`** — Pydantic models that
+parse the **LLM's tool-use output** at the trust boundary. Separate
+from the domain `Note` / `Card` for good reason: these are
+*untrusted* (the LLM might omit fields, send empty strings, add
+extras), so Pydantic enforces `min_length=1` and friends. The use
+case then constructs real domain entities from the validated DTO
+data. Two shapes, one conceptual "note" — because the trust story is
+different at the two layers.
+
+**`GenerateRequest` / `GenerateResponse`** — plain dataclass envelopes
+for the use case's input and output. Not Pydantic, because they're
+shaped by our code (the web route builds the request; the use case
+builds the response) — no untrusted crossing involved. `Request`
+carries `kind + input + user_prompt`; `Response` carries
+`token + bundle` so the web layer can render the draft and remember
+its token in one shot.
+
+**`LLMProvider`, `SourceRepository`, `NoteRepository`,
+`CardRepository`, `CardReviewRepository`, `DraftStore`** (Protocols) —
+the six DIP boundaries. Each names a capability the use case needs
+without committing to an implementation. Fakes provide the capability
+in tests; Phase 3 real adapters provide it in production. The use
+case depends on the Protocol, never on the adapter — swap an adapter
+by adding a class + one line in the composition root (`app/main.py`,
+Phase 4). This is also what makes the TEST-03 contract-test harness
+possible: one suite parametrized over `[fake, real]`, both satisfying
+the same Protocol.
+
+**`UrlFetcher`, `SourceReader`** (Callable type aliases, not
+Protocols) — stateless, single-operation ports. `UrlFetcher` is
+`str -> str` (fetch a URL, return extracted text); `SourceReader` is
+`Path -> str` (read a file, return its content). We don't need a
+full class-like abstraction for something this small, so a Callable
+alias is more honest. Reach for `Protocol` only when the port has
+state, multiple methods, or clear growth pressure (see project
+`CLAUDE.md` Protocol-vs-function clarifier).
+
+**`GenerateFromSource`** — the use case class. Constructor-injected
+Protocols (`llm`, `draft_store`) make testing trivial (pass fakes in
+the test; pass real adapters in production via the composition root).
+Why a class, not a function? It holds state (the injected deps)
+across calls. `execute(request)` is the single public entry point;
+internal helpers are private methods on the class. When the FILE /
+URL branches light up in Phase 4, they'll take additional injected
+ports (`SourceReader`, `UrlFetcher`) in the same constructor.
+
+**`DojoError` → `UnsupportedSourceKind` / `LLMOutputMalformed` /
+`DraftExpired`** — exception hierarchy with one root so the
+FastAPI exception handler in Phase 4 can catch `DojoError` broadly
+and map each subclass to an HTTP response. `UnsupportedSourceKind`
+fires from the use case (kind-coherence check at the external-input
+boundary); `LLMOutputMalformed` fires from the Phase 3 Anthropic
+adapter (Pydantic DTO validation failure); `DraftExpired` fires
+from the Phase 3 `InMemoryDraftStore` on a post-TTL access. The
+hierarchy stays thin on purpose — more subclasses land only when a
+caller actually needs to branch on the error type.
+
+---
+
+## 7. Where the pieces live (file map)
 
 | Concept | File | Plan |
 |---------|------|------|
@@ -492,7 +569,7 @@ sequenceDiagram
 
 ---
 
-## 7. What Phase 2 does NOT deliver
+## 8. What Phase 2 does NOT deliver
 
 Explicitly out of scope — these are Phase 3 (and later) concerns.
 Knowing what the Protocols expect from them is important:
