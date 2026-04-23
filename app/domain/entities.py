@@ -65,5 +65,9 @@ class CardReview:
 
     @property
     def is_correct(self) -> bool:
-        """Derive the correct/incorrect boolean from the rating enum."""
+        """Derive the correct/incorrect boolean from the rating enum.
+
+        :returns: `True` when `rating` is `Rating.CORRECT`; else
+            `False`.
+        """
         return self.rating is Rating.CORRECT

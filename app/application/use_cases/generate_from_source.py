@@ -30,12 +30,12 @@ class GenerateFromSource:
         """Wire the use case against its ports.
 
         :param llm: The LLM provider port used to generate the note and
-            cards from the resolved ``source_text`` + ``user_prompt``.
+            cards from the resolved `source_text` + `user_prompt`.
         :param draft_store: Port holding the pending draft bundle under
-            its minted ``DraftToken`` until an explicit save use case
+            its minted `DraftToken` until an explicit save use case
             commits or discards it.
-        :param extractor_registry: Resolves non-TOPIC ``SourceKind`` to
-            its extractor callable; never consulted for ``TOPIC``.
+        :param extractor_registry: Resolves non-TOPIC `SourceKind` to
+            its extractor callable; never consulted for `TOPIC`.
         """
         self._llm = llm
         self._draft_store = draft_store
@@ -44,15 +44,15 @@ class GenerateFromSource:
     def execute(self, request: GenerateRequest) -> GenerateResponse:
         """Run the generate flow and return the stored draft envelope.
 
-        :param request: The incoming ``GenerateRequest``; its ``kind``
-            drives dispatch, its ``user_prompt`` is forwarded to the
-            LLM, and its ``input`` feeds the extractor for non-TOPIC
+        :param request: The incoming `GenerateRequest`; its `kind`
+            drives dispatch, its `user_prompt` is forwarded to the
+            LLM, and its `input` feeds the extractor for non-TOPIC
             kinds.
-        :returns: A ``GenerateResponse`` holding the minted
-            ``DraftToken`` and the stored ``DraftBundle``.
+        :returns: A `GenerateResponse` holding the minted
+            `DraftToken` and the stored `DraftBundle`.
         :raises ExtractorNotApplicable: If a non-TOPIC caller routes
-            ``TOPIC`` through the registry (a programmer-error path).
-        :raises UnsupportedSourceKind: If ``request.kind`` is a FILE /
+            `TOPIC` through the registry (a programmer-error path).
+        :raises UnsupportedSourceKind: If `request.kind` is a FILE /
             URL kind with no extractor registered (Phase 2 pre-wiring).
         """
         source_text: str | None = (
@@ -72,7 +72,7 @@ class GenerateFromSource:
     def _extract_source_text(self, request: GenerateRequest) -> str:
         """Resolve the extractor for the kind and call it with the request.
 
-        :param request: The non-TOPIC ``GenerateRequest`` whose kind
+        :param request: The non-TOPIC `GenerateRequest` whose kind
             keys into the extractor registry.
         :returns: The extracted source text to hand to the LLM.
         """

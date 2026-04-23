@@ -18,8 +18,8 @@ class Registry[K: Hashable, V](ABC):
     ) -> None:
         """Initialize with a (possibly empty) entries mapping.
 
-        :param entries: Read-only ``Mapping`` of keys to values. Defaults
-            to an empty ``MappingProxyType``; the registry never mutates
+        :param entries: Read-only `Mapping` of keys to values. Defaults
+            to an empty `MappingProxyType`; the registry never mutates
             it after construction.
         """
         self._entries = entries
@@ -28,8 +28,8 @@ class Registry[K: Hashable, V](ABC):
         """Return the value for key; raise a domain error if absent.
 
         :param key: The lookup key.
-        :returns: The value registered for ``key``.
-        :raises Exception: Whatever ``_missing_error(key)`` returns when
+        :returns: The value registered for `key`.
+        :raises Exception: Whatever `_missing_error(key)` returns when
             the key is not in the entries mapping.
         """
         value = self._entries.get(key)

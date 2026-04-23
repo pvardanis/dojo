@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import os
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -25,8 +26,17 @@ _PLACEHOLDER_API_KEY = "dev-placeholder"
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Startup: configure logging, guard the placeholder API key."""
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Startup: configure logging, guard the placeholder API key.
+
+    :param app: The FastAPI application whose lifecycle this manager
+        brackets. Required by FastAPI's lifespan contract; Dojo does
+        not attach state to it at startup.
+    :yields: Control back to FastAPI for the serving phase; no state
+        is yielded to the caller.
+    :raises RuntimeError: If `DOJO_ENV=prod` and the Anthropic API
+        key is still the dev placeholder.
+    """
     settings = get_settings()
     configure_logging(settings.log_level)
     _guard_api_key(settings.anthropic_api_key.get_secret_value())
@@ -52,7 +62,11 @@ def _guard_api_key(api_key: str) -> None:
 
 
 def create_app() -> FastAPI:
-    """Build the FastAPI app. Called by uvicorn via `app.main:app`."""
+    """Build the FastAPI app. Called by uvicorn via `app.main:app`.
+
+    :returns: A fully-wired `FastAPI` instance with templates,
+        static files, and routers attached.
+    """
     app = FastAPI(title="Dojo", lifespan=lifespan)
     app.state.templates = _TEMPLATES
     app.mount("/static", StaticFiles(directory=_STATIC), name="static")

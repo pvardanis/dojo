@@ -14,8 +14,8 @@ class UnsupportedSourceKind(DojoError):
 class ExtractorNotApplicable(DojoError):
     """Raised when a SourceKind categorically has no extractor.
 
-    Distinct from ``UnsupportedSourceKind``: this signals a category
-    mismatch (e.g. TOPIC, whose source text is ``None`` by design and
+    Distinct from `UnsupportedSourceKind`: this signals a category
+    mismatch (e.g. TOPIC, whose source text is `None` by design and
     must bypass the registry), not a "not wired up yet" state.
     """
 

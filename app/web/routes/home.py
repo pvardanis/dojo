@@ -12,7 +12,12 @@ router = APIRouter()
 
 @router.get("/", response_class=HTMLResponse)
 async def home(request: Request) -> HTMLResponse:
-    """Render the minimal Dojo home page."""
+    """Render the minimal Dojo home page.
+
+    :param request: Incoming FastAPI request; used to resolve the
+        Jinja2 templates registered on `app.state`.
+    :returns: The rendered `home.html` response.
+    """
     templates = request.app.state.templates
     return templates.TemplateResponse(
         request=request, name="home.html", context={}
@@ -21,5 +26,8 @@ async def home(request: Request) -> HTMLResponse:
 
 @router.get("/health", response_class=JSONResponse)
 async def health() -> dict[str, str]:
-    """Return a lightweight health probe JSON payload."""
+    """Return a lightweight health probe JSON payload.
+
+    :returns: `{"status": "ok"}` for liveness checks.
+    """
     return {"status": "ok"}

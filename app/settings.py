@@ -53,7 +53,12 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    """Return the app's singleton settings (cached)."""
+    """Return the app's singleton settings (cached).
+
+    :returns: The process-wide `Settings` instance loaded from
+        environment variables + `.env` on first call; subsequent
+        calls return the cached instance.
+    """
     # pydantic-settings loads fields from env/.env at call time; the
     # type checker can't see those sources, hence the ignore.
     return Settings()  # type: ignore[call-arg]  # pydantic-settings stubs gap

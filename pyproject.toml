@@ -24,6 +24,7 @@ dev = [
     "ruff>=0.8",
     "ty==0.0.31",              # D-16: exact pin, still beta
     "interrogate>=1.7",
+    "pydoclint>=0.5",          # Sphinx :param:/:returns:/:raises: completeness
     "pytest>=8.3",
     "pytest-asyncio>=1.0",     # 1.0+ removed deprecated event_loop
     "pytest-cov>=5.0",
@@ -76,6 +77,28 @@ exclude = ["migrations", "tests", "docs"]
 ignore-init-method = true
 ignore-init-module = true
 ignore-magic = true
+
+[tool.pydoclint]
+# Sphinx style matches CLAUDE.md: :param: / :returns: / :raises:.
+# Types live in function signatures, not docstrings.
+style = "sphinx"
+arg-type-hints-in-docstring = false
+check-return-types = false
+check-yield-types = false
+require-return-section-when-returning-nothing = false
+allow-init-docstring = true
+# One-liner docstrings skip deep checks — matches existing repo style
+# for simple getters/setters and keeps trivial functions readable.
+skip-checking-short-docstrings = true
+# :raises: documents caller-visible exceptions, including ones surfaced
+# via delegation (e.g. Registry.get → _missing_error, use cases → port
+# calls) and Protocol contracts with no body. pydoclint's DOC502/DOC503
+# look at direct `raise` statements only; silence them and trust the
+# author on raise provenance.
+skip-checking-raises = true
+# Only lint the application package; tests + migrations are exempt
+# (interrogate excludes them too).
+exclude = '\.venv|migrations|tests|docs|build|dist'
 
 [tool.ty]
 # D-16: pin exact patch; review release notes on every bump.
