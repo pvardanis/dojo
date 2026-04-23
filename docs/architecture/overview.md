@@ -110,38 +110,38 @@ classDiagram
     %% Entities (frozen dataclasses)
     class Source {
         <<frozen dataclass>>
-        +SourceKind kind
-        +str user_prompt
-        +str display_name
-        +str? identifier
-        +str? source_text
-        +SourceId id
-        +datetime created_at
+        kind: SourceKind
+        user_prompt: str
+        display_name: str
+        identifier: str | None
+        source_text: str | None
+        id: SourceId
+        created_at: datetime
     }
     class Note {
         <<frozen dataclass>>
-        +SourceId source_id
-        +str title
-        +str content_md
-        +NoteId id
-        +datetime generated_at
+        source_id: SourceId
+        title: str
+        content_md: str
+        id: NoteId
+        generated_at: datetime
     }
     class Card {
         <<frozen dataclass>>
-        +SourceId source_id
-        +str question
-        +str answer
-        +tuple~str~ tags
-        +CardId id
-        +datetime created_at
+        source_id: SourceId
+        question: str
+        answer: str
+        tags: tuple[str, ...]
+        id: CardId
+        created_at: datetime
     }
     class CardReview {
         <<frozen dataclass>>
-        +CardId card_id
-        +Rating rating
-        +ReviewId id
-        +datetime reviewed_at
-        +is_correct() bool
+        card_id: CardId
+        rating: Rating
+        id: ReviewId
+        reviewed_at: datetime
+        is_correct: bool
     }
 
     %% Exception root
@@ -193,36 +193,36 @@ classDiagram
     %% DTOs at the LLM boundary (Pydantic)
     class NoteDTO {
         <<Pydantic>>
-        +str title
-        +str content_md
+        title: str
+        content_md: str
     }
     class CardDTO {
         <<Pydantic>>
-        +str question
-        +str answer
-        +tuple~str~ tags
+        question: str
+        answer: str
+        tags: tuple[str, ...]
     }
     class GeneratedContent {
         <<Pydantic>>
-        +list~CardDTO~ cards (min_length=1)
+        cards: list[CardDTO]
     }
 
     %% Internal app DTOs (stdlib dataclass)
     class GenerateRequest {
         <<frozen dataclass>>
-        +SourceKind kind
-        +str? input
-        +str user_prompt
+        kind: SourceKind
+        input: str | None
+        user_prompt: str
     }
     class GenerateResponse {
         <<frozen dataclass>>
-        +DraftToken token
-        +DraftBundle bundle
+        token: DraftToken
+        bundle: DraftBundle
     }
     class DraftBundle {
         <<frozen dataclass>>
-        +Note note
-        +list~Card~ cards
+        note: Note
+        cards: list[Card]
     }
     class DraftToken {
         <<NewType over UUID>>
@@ -231,31 +231,31 @@ classDiagram
     %% Ports (Protocols — no @runtime_checkable)
     class LLMProvider {
         <<Protocol>>
-        +generate_note_and_cards(source_text, user_prompt) tuple
+        generate_note_and_cards(source_text, user_prompt) -> tuple
     }
     class SourceRepository {
         <<Protocol>>
-        +save(source)
-        +get(id) Source?
+        save(source) -> None
+        get(id) -> Source | None
     }
     class NoteRepository {
         <<Protocol>>
-        +save(note)
-        +get(id) Note?
+        save(note) -> None
+        get(id) -> Note | None
     }
     class CardRepository {
         <<Protocol>>
-        +save(card)
-        +get(id) Card?
+        save(card) -> None
+        get(id) -> Card | None
     }
     class CardReviewRepository {
         <<Protocol>>
-        +save(review)
+        save(review) -> None
     }
     class DraftStore {
         <<Protocol>>
-        +put(token, bundle)
-        +pop(token) DraftBundle?
+        put(token, bundle) -> None
+        pop(token) -> DraftBundle | None
     }
 
     %% Callable aliases (stateless)
@@ -270,9 +270,9 @@ classDiagram
 
     %% Use case
     class GenerateFromSource {
-        -LLMProvider llm
-        -DraftStore draft_store
-        +execute(request) GenerateResponse
+        llm: LLMProvider
+        draft_store: DraftStore
+        execute(request) -> GenerateResponse
     }
 
     %% Application exceptions
@@ -347,30 +347,30 @@ classDiagram
     %% Fakes — Plan 03 (committed)
     class FakeLLMProvider {
         <<fake — tests/fakes>>
-        +list returns
-        +list raises
-        +list calls
+        returns: list
+        raises: list
+        calls: list
     }
     class FakeSourceRepository {
         <<fake>>
-        +dict saved
+        saved: dict
     }
     class FakeNoteRepository {
         <<fake>>
-        +dict saved
+        saved: dict
     }
     class FakeCardRepository {
         <<fake>>
-        +dict saved
+        saved: dict
     }
     class FakeCardReviewRepository {
         <<fake>>
-        +list log
+        log: list
     }
     class FakeDraftStore {
         <<fake>>
-        +list puts
-        +force_expire(token)
+        puts: list
+        force_expire(token) -> None
     }
 
     %% Real adapters — Phase 3 (planned)
