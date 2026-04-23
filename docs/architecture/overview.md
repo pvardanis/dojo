@@ -56,10 +56,12 @@ flowchart TD
     Application -->|imports| Domain
     Web -.->|may import<br/>for rendering| Domain
 
-    classDef locked fill:#d4f4dd,stroke:#2d7a3f
-    classDef pending fill:#fef3c7,stroke:#b45309
+    classDef locked fill:#d4f4dd,stroke:#2d7a3f,color:#1a1a1a
+    classDef pending fill:#fef3c7,stroke:#b45309,color:#1a1a1a
+    classDef node fill:#ffffff,stroke:#94a3b8,color:#1a1a1a
     class Domain,Application locked
     class Web,Infrastructure pending
+    class routes,adapters,ports,dtos,usecase,appexc,entities,vos,domexc node
 ```
 
 **Dependency rule:** arrows only flow inward. Domain imports nothing
