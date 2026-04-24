@@ -19,7 +19,16 @@ from app.domain.value_objects import SourceKind
 
 
 class GenerateFromSource:
-    """Generate a draft note + cards from a source, store under token."""
+    """Generate a draft note + cards and hold them in-memory.
+
+    **Nothing in this use case touches the database.** The generated
+    note and card candidates are stored in a `DraftStore` under a
+    minted `DraftToken` with a 30-minute TTL. A separate persistence
+    use case (Phase 4) pops the draft from the store and writes
+    `Source`, `Note`, and approved `Card`s in a single atomic
+    transaction when — and only when — the user clicks Save. If the
+    user abandons the draft, the TTL reclaims it; no orphan rows.
+    """
 
     def __init__(
         self,
@@ -28,6 +37,10 @@ class GenerateFromSource:
         extractor_registry: SourceTextExtractorRegistry,
     ) -> None:
         """Wire the use case against its ports.
+
+        No repository port, no database session: this use case is
+        pre-persist. See the class docstring for the save/draft
+        contract.
 
         :param llm: The LLM provider port used to generate the note and
             cards from the resolved `source_text` + `user_prompt`.
@@ -43,6 +56,11 @@ class GenerateFromSource:
 
     def execute(self, request: GenerateRequest) -> GenerateResponse:
         """Run the generate flow and return the stored draft envelope.
+
+        The returned `DraftBundle` is held in the `DraftStore` only;
+        no database writes happen here. The Phase 4 save use case
+        pops the draft by `DraftToken` and persists `Source`, `Note`,
+        and approved `Card`s atomically.
 
         :param request: The incoming `GenerateRequest`; its `kind`
             drives dispatch, its `user_prompt` is forwarded to the
