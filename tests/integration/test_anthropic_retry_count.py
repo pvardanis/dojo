@@ -1,5 +1,5 @@
 # ABOUTME: SC #4 — respx proves tenacity attempts exact count.
-# ABOUTME: 429 -> 200 == 2 calls; 401 == 1 call (whitelist skip).
+# ABOUTME: Covers 429/500 retries, 401 whitelist skip, transport errors.
 """Anthropic retry-count integration tests (SC #4)."""
 
 from __future__ import annotations
@@ -10,7 +10,7 @@ import pytest
 import respx
 from tenacity import wait_fixed
 
-from app.application.exceptions import LLMAuthFailed
+from app.application.exceptions import LLMAuthFailed, LLMUnreachable
 from app.infrastructure.llm.anthropic_provider import AnthropicLLMProvider
 
 _MESSAGES_URL = "https://api.anthropic.com/v1/messages"
@@ -95,3 +95,79 @@ def test_401_no_retry_and_wraps_as_auth_failed() -> None:
     with pytest.raises(LLMAuthFailed):
         provider.generate_note_and_cards(None, "alpha")
     assert route.call_count == 1
+
+
+@respx.mock
+def test_500_then_500_then_200_exactly_three_calls() -> None:
+    """SC #4: two 500s then a 200 -> route.call_count == 3."""
+    route = respx.post(_MESSAGES_URL).mock(
+        side_effect=[
+            httpx.Response(500, json={"error": {"type": "api_error"}}),
+            httpx.Response(500, json={"error": {"type": "api_error"}}),
+            httpx.Response(200, json=_valid_tool_use_body()),
+        ]
+    )
+    provider = AnthropicLLMProvider(client=_fake_client())
+    note, cards = provider.generate_note_and_cards(None, "alpha")
+    assert route.call_count == 3
+    assert note.title == "t"
+    assert len(cards) == 1
+
+
+@respx.mock
+def test_500_exhaustion_wraps_as_llm_unreachable() -> None:
+    """SC #4: three 500s -> tenacity exhausts -> LLMUnreachable."""
+    route = respx.post(_MESSAGES_URL).mock(
+        return_value=httpx.Response(500, json={"error": {"type": "api_error"}})
+    )
+    with pytest.raises(LLMUnreachable) as exc_info:
+        AnthropicLLMProvider(client=_fake_client()).generate_note_and_cards(
+            None, "alpha"
+        )
+    assert route.call_count == 3
+    assert isinstance(exc_info.value.__cause__, anthropic.InternalServerError)
+
+
+@respx.mock
+def test_connection_error_is_retried_and_wrapped() -> None:
+    """APIConnectionError transients: 2 failures then success -> 3 calls."""
+    route = respx.post(_MESSAGES_URL).mock(
+        side_effect=[
+            httpx.ConnectError("refused"),
+            httpx.ConnectError("refused"),
+            httpx.Response(200, json=_valid_tool_use_body()),
+        ]
+    )
+    provider = AnthropicLLMProvider(client=_fake_client())
+    note, _ = provider.generate_note_and_cards(None, "alpha")
+    assert route.call_count == 3
+    assert note.title == "t"
+
+
+@respx.mock
+def test_connection_exhaustion_wraps_as_llm_unreachable() -> None:
+    """Three consecutive ConnectErrors -> LLMUnreachable."""
+    route = respx.post(_MESSAGES_URL).mock(
+        side_effect=httpx.ConnectError("refused")
+    )
+    with pytest.raises(LLMUnreachable) as exc_info:
+        AnthropicLLMProvider(client=_fake_client()).generate_note_and_cards(
+            None, "alpha"
+        )
+    assert route.call_count == 3
+    assert isinstance(exc_info.value.__cause__, anthropic.APIConnectionError)
+
+
+@respx.mock
+def test_timeout_error_is_retried_and_wrapped() -> None:
+    """APITimeoutError is in the retry whitelist (D-03)."""
+    route = respx.post(_MESSAGES_URL).mock(
+        side_effect=[
+            httpx.TimeoutException("slow"),
+            httpx.Response(200, json=_valid_tool_use_body()),
+        ]
+    )
+    provider = AnthropicLLMProvider(client=_fake_client())
+    note, _ = provider.generate_note_and_cards(None, "alpha")
+    assert route.call_count == 2
+    assert note.title == "t"
