@@ -6,6 +6,12 @@
 
 install:
 	uv sync
+	# anthropic pulls in upstream `docstring-parser`; pydoclint pulls in
+	# `docstring-parser-fork`. Both write to the same `docstring_parser/`
+	# namespace and clobber non-deterministically on fresh `uv sync`. The
+	# fork is a strict superset (adds `DocstringYields`), so we force it
+	# to win by reinstalling after sync. Idempotent + cheap (single wheel).
+	uv pip install --force-reinstall --no-deps docstring-parser-fork==0.0.14
 	uv run pre-commit install
 
 format:
