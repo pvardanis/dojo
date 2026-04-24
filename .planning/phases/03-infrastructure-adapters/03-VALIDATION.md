@@ -57,16 +57,16 @@ Each dimension below MUST have at least one automated assertion somewhere in the
 | # | Dimension | Evidence Required | Test File (planner assigns) |
 |---|-----------|-------------------|------------------------------|
 | 1 | Port-contract conformance (7 ports × fake + real legs) | Each `tests/contract/test_{port}_contract.py` passes on both `fake` and `real` params; LLM real leg is env-gated via `RUN_LLM_TESTS=1` | `tests/contract/*.py` |
-| 2 | Atomic-transaction rollback (SC #2) | Force 3rd insert to raise inside `with session.begin()`; assert 0 rows in `sources`, `notes`, `cards` tables | `tests/integration/test_atomic_save.py` |
-| 3 | Retry-count correctness (SC #4) | `respx` stub returns 429 then 200; assert exactly 2 HTTP calls; with 401, assert 1 HTTP call (whitelist check) | `tests/integration/test_anthropic_provider.py` |
+| 2 | Atomic-transaction rollback (SC #2) | Force 3rd insert to raise inside `with session.begin()`; assert 0 rows in `sources`, `notes`, `cards` tables | `tests/integration/test_sql_repositories_atomic.py` |
+| 3 | Retry-count correctness (SC #4) | `respx` stub returns 429 then 200; assert exactly 2 HTTP calls; with 401, assert 1 HTTP call (whitelist check) | `tests/integration/test_anthropic_retry_count.py` |
 | 4 | Tool-use DTO schema match (SC #3) | Valid tool-use response → returns `NoteDTO` + `list[CardDTO]`; malformed → `LLMOutputMalformed` raised after one semantic retry | `tests/integration/test_anthropic_provider.py` |
-| 5 | TTL fake-clock coverage (SC #5) | Inject list-captured clock; TTL eviction triggers lazy on `pop`; assert entry is None post-expiry | `tests/contract/test_draft_store_contract.py` |
-| 6 | Concurrent-pop race (SC #5) | Two asyncio coroutines race on same token; `asyncio.gather` confirms exactly one non-None return; `--count=10` reinforces (CPython 3.12 GIL observability) | `tests/contract/test_draft_store_contract.py` |
+| 5 | TTL fake-clock coverage (SC #5) | Inject list-captured clock; TTL eviction triggers lazy on `pop`; assert entry is None post-expiry | `tests/integration/test_draft_store_concurrency.py` |
+| 6 | Concurrent-pop race (SC #5) | Two asyncio coroutines race on same token; `asyncio.gather` confirms exactly one non-None return; `--count=10` reinforces (CPython 3.12 GIL observability) | `tests/integration/test_draft_store_concurrency.py` |
 | 7 | URL-fetch paywall + length heuristics (SC #6) | `respx` stubs: <1000 char → `SourceNotArticle`; paywall markers → `SourceNotArticle`; 503 → `SourceFetchFailed`; timeout → `SourceFetchFailed` | `tests/integration/test_url_fetcher.py` |
 | 8 | File-read UTF-8 strictness | tmp file with invalid UTF-8 bytes → `SourceUnreadable`; missing path → `SourceNotFound`; chmod-0 path → `SourceUnreadable` | `tests/integration/test_file_reader.py` |
 | 9 | Alembic round-trip (M9 mitigation) | `alembic upgrade head` then `downgrade base` then `upgrade head` succeeds; `Base.metadata.tables` contains all 4 expected tables after import | `tests/integration/test_migrations.py` |
-| 10 | Regenerate semantics (SC #7) | Existing Source with Note + 3 Cards → regenerate → Note row overwritten, 3 new Card rows appended (6 total), original 3 Cards untouched | `tests/integration/test_regenerate.py` |
-| 11 | Composition-root swap verifiable | `app/main.py` factory returns wired `GenerateFromSource` with real adapters when `DOJO_LLM=real` (default), fake when `DOJO_LLM=fake`; unit-testable without running server | `tests/unit/test_composition_root.py` |
+| 10 | Regenerate semantics (SC #7) | Existing Source with Note + 3 Cards → regenerate → Note row overwritten, 3 new Card rows appended (6 total), original 3 Cards untouched | `tests/integration/test_sql_repositories_regenerate.py` |
+| 11 | Composition-root factory wiring | `app/main.py` exposes factory functions returning wired `GenerateFromSource` with real adapters (`AnthropicLLMProvider`, `Sql*Repository`, `InMemoryDraftStore`, real file/URL readers); unit-testable by inspecting returned type and attribute graph without running server. Env-switch for fake adapters deferred to Phase 7 (E2E). | `tests/unit/test_composition_root.py` |
 
 ---
 
