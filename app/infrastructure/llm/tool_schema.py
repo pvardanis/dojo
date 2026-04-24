@@ -1,6 +1,13 @@
 # ABOUTME: Anthropic tool-use schema for generate_note_and_cards.
 # ABOUTME: strict=True + additionalProperties=false grammar-constrains output.
-"""Tool-use schema constant (RESEARCH §B.2 + R2)."""
+"""Tool-use schema constant.
+
+Hand-written rather than derived from ``NoteDTO.model_json_schema()``
+because Anthropic's tool-use schema validator rejects ``$ref`` /
+``$defs`` that Pydantic emits for nested models (RESEARCH §B.2 / R2).
+Any future ``NoteDTO`` / ``CardDTO`` field addition must be mirrored
+here by hand, and a regression test should pin the field list.
+"""
 
 from __future__ import annotations
 
