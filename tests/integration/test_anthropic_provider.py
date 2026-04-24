@@ -329,10 +329,12 @@ def test_malformed_then_malformed_cause_chain() -> None:
 
 @respx.mock
 def test_semantic_retry_sends_stricter_system_prompt() -> None:
-    """The second call's `system` field carries the stricter addendum.
+    """Attempt 2's `system` field carries the stricter addendum AND
+    the prior validation error text (feedback-loop retry).
 
-    Without this assertion, the stricter prompt could be silently
-    dropped during a refactor and SC #3's retry quality degrades.
+    Without this assertion the stricter prompt — or the feedback
+    loop — could be silently dropped during a refactor and SC #3's
+    retry quality degrades.
     """
     route = respx.post(_MESSAGES_URL).mock(
         side_effect=[
@@ -351,8 +353,17 @@ def test_semantic_retry_sends_stricter_system_prompt() -> None:
     assert route.call_count == 2
     first_body = json.loads(route.calls[0].request.content)
     second_body = json.loads(route.calls[1].request.content)
-    assert "MUST contain at least one card" not in first_body["system"]
-    assert "MUST contain at least one card" in second_body["system"]
+    # Attempt 1 uses the base prompt only.
+    assert "at least one card" not in first_body["system"]
+    assert "Validation error" not in first_body["system"]
+    # Attempt 2 carries the stricter addendum + the prior VE text so
+    # Claude can repair the specific failure.
+    assert "at least one card" in second_body["system"]
+    assert "Validation error" in second_body["system"]
+    # Pydantic's message for the empty-cards case mentions "cards"
+    # and the "too_short" error type — both should reach Claude.
+    assert "cards" in second_body["system"]
+    assert "too_short" in second_body["system"]
 
 
 @respx.mock
@@ -440,6 +451,27 @@ def test_multiple_tool_blocks_picks_first() -> None:
     ).generate_note_and_cards(None, "alpha")
     assert note.title == "FIRST"
     assert cards[0].question == "q1"
+
+
+def test_retry_prompt_caps_echoed_validation_error() -> None:
+    """`_retry_prompt` trims oversized VE text to keep context bounded.
+
+    Pydantic errors can explode when validators attach long input
+    values (e.g. massive source_text round-tripped into the error).
+    The retry prompt caps the echoed error at 1500 chars so a bulky
+    VE can't swallow a meaningful fraction of the context window.
+    """
+    from app.infrastructure.llm.anthropic_provider import _retry_prompt
+
+    huge = "x" * 5000
+    prompt = _retry_prompt(huge)
+    # Find where the validation error section starts; everything after
+    # it is the echoed error body.
+    marker = "Validation error:\n"
+    tail = prompt[prompt.index(marker) + len(marker) :]
+    assert len(tail) <= 1500
+    # Stricter addendum phrasing is preserved before the echoed error.
+    assert "at least one card" in prompt
 
 
 def test_default_client_uses_max_retries_zero_and_timeout(

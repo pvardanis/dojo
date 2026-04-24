@@ -46,9 +46,32 @@ _SYSTEM_PROMPT = (
     "generate_note_and_cards tool exactly once with a note and a "
     "non-empty list of cards."
 )
-_STRICTER_ADDENDUM = (
-    " IMPORTANT: the cards array MUST contain at least one card."
-)
+
+
+def _retry_prompt(validation_error: str) -> str:
+    """Build a stricter retry prompt that echoes the prior VE back.
+
+    Including the specific pydantic error text in attempt 2's system
+    prompt lets the model repair the exact failure (e.g. the empty
+    `cards` array) rather than just being told to be stricter in
+    general. Pydantic error strings are internal diagnostic text, not
+    user-authored, so echoing them back is low-risk for prompt
+    injection — but we still bound the echoed error to ~1500 chars
+    to avoid blowing a generous chunk of the context window on an
+    unbounded Pydantic dump.
+
+    :param validation_error: `str(pydantic.ValidationError)` from the
+        first attempt.
+    :returns: A system prompt string that appends the stricter
+        addendum + the prior validation error to ``_SYSTEM_PROMPT``.
+    """
+    trimmed = validation_error[:1500]
+    return (
+        f"{_SYSTEM_PROMPT} IMPORTANT: your previous tool call failed "
+        f"validation with the following error. Fix it on this attempt, "
+        f"and ensure the cards array contains at least one card.\n"
+        f"\nValidation error:\n{trimmed}"
+    )
 
 
 class AnthropicLLMProvider:
@@ -120,12 +143,12 @@ class AnthropicLLMProvider:
         source_text: str | None,
         user_prompt: str,
     ) -> tuple[NoteDTO, list[CardDTO]]:
-        """Two-attempt DTO validation with a stricter-prompt retry (D-03a).
+        """Two-attempt DTO validation with a feedback-loop retry (D-03a).
 
-        First attempt: the default system prompt. On
-        ``pydantic.ValidationError`` log the reason and fall through
-        to a second attempt with ``_STRICTER_ADDENDUM`` appended to
-        the system prompt. A second failure raises
+        First attempt uses the default system prompt. On
+        ``pydantic.ValidationError`` the error is logged and folded
+        into the second-attempt prompt via ``_retry_prompt`` so Claude
+        sees the exact failure to repair. A second failure raises
         ``LLMOutputMalformed``; no third attempt.
 
         Does NOT catch ``anthropic.APIError`` — those propagate to the
@@ -141,23 +164,26 @@ class AnthropicLLMProvider:
             validation; chains to the second attempt's
             ``pydantic.ValidationError``.
         """
+        first_error: str | None = None
         try:
             resp = self._sdk_call(_SYSTEM_PROMPT, source_text, user_prompt)
             return parse_and_validate(resp)
         except pydantic.ValidationError as ve:
+            first_error = str(ve)
             log.warning(
                 "llm.malformed.retrying_stricter",
-                validation_error=str(ve),
+                validation_error=first_error,
             )
 
-        # Second attempt — outside the `except` block so an anthropic
-        # error here doesn't chain onto the prior ValidationError.
-        resp = self._sdk_call(
-            _SYSTEM_PROMPT + _STRICTER_ADDENDUM,
-            source_text,
-            user_prompt,
-        )
+        # Reaching this line implies the first try block entered the
+        # except (otherwise it returned). `first_error` is set.
+        assert first_error is not None
         try:
+            resp = self._sdk_call(
+                _retry_prompt(first_error),
+                source_text,
+                user_prompt,
+            )
             return parse_and_validate(resp)
         except pydantic.ValidationError as e:
             raise LLMOutputMalformed(str(e)) from e
