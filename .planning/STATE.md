@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: "Plan 02-05 delivered tests/contract/__init__.py (3 LOC) + tests/contract/test_llm_provider_contract.py (38 LOC) — TEST-03 harness parameterised over ["fake", "anthropic"] with double-gate (RUN_LLM_TESTS + pytest.importorskip on app.infrastructure.llm.anthropic_provider); anthropic leg auto-skips cleanly in Phase 2 whether RUN_LLM_TESTS is set or not. pyproject.toml gained import-linter>=2.0 + [tool.importlinter] with two forbidden contracts (app.domain and app.application must not import app.infrastructure or app.web). Makefile lint: target extended to two lines (ruff + lint-imports). Negative-path proof captured (deliberate boundary violation made lint-imports exit non-zero, reverted without commit). make check: 94 passed, 1 skipped, 97% coverage, 2.48s end-to-end. Discharges Phase 2 SC #5 + SC #6 and TEST-03; closes Phase-1 LEARNINGS open item "Phase-2 boundary lint"."
+status: executing
 stopped_at: Phase 3 context gathered
-last_updated: "2026-04-24T11:07:12.662Z"
-last_activity: 2026-04-23 -- Plan 02-05 complete; SUMMARY.md + STATE + ROADMAP + REQUIREMENTS updated; Phase 1 LEARNINGS open item closed
+last_updated: "2026-04-24T11:21:36.405Z"
+last_activity: 2026-04-24 -- Phase 03 execution started
 progress:
   total_phases: 7
   completed_phases: 2
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-18)
 
 **Core value:** Generate Q&A cards from user-supplied source material, drill them interactively, retain knowledge. The generate → drill → learn loop must work even if everything else fails.
-**Current focus:** Phase 2 closed; Phase 3 — Infrastructure Adapters is next (planning not yet started)
+**Current focus:** Phase 03 — infrastructure-adapters
 
 ## Current Position
 
-Phase: 2 of 7 — complete
-Plan: 5 of 5 complete — Plan 05 landed on branch phase-02-plan-05-contract-harness-import-linter; Phase 2 closed
-Status: Plan 02-05 delivered tests/contract/__init__.py (3 LOC) + tests/contract/test_llm_provider_contract.py (38 LOC) — TEST-03 harness parameterised over ["fake", "anthropic"] with double-gate (RUN_LLM_TESTS + pytest.importorskip on app.infrastructure.llm.anthropic_provider); anthropic leg auto-skips cleanly in Phase 2 whether RUN_LLM_TESTS is set or not. pyproject.toml gained import-linter>=2.0 + [tool.importlinter] with two forbidden contracts (app.domain and app.application must not import app.infrastructure or app.web). Makefile lint: target extended to two lines (ruff + lint-imports). Negative-path proof captured (deliberate boundary violation made lint-imports exit non-zero, reverted without commit). make check: 94 passed, 1 skipped, 97% coverage, 2.48s end-to-end. Discharges Phase 2 SC #5 + SC #6 and TEST-03; closes Phase-1 LEARNINGS open item "Phase-2 boundary lint".
-Last activity: 2026-04-23 -- Plan 02-05 complete; SUMMARY.md + STATE + ROADMAP + REQUIREMENTS updated; Phase 1 LEARNINGS open item closed
+Phase: 03 (infrastructure-adapters) — EXECUTING
+Plan: 1 of 5
+Status: Executing Phase 03
+Last activity: 2026-04-24 -- Phase 03 execution started
 
 Progress: [███░░░░░░░] 28%
 
