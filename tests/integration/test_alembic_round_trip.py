@@ -26,18 +26,24 @@ def test_upgrade_downgrade_upgrade_cycle(
     """
     engine = create_engine(test_db_url, future=True)
     try:
-        tables = set(inspect(engine).get_table_names())
-        assert {"sources", "notes", "cards", "card_reviews"} <= tables
+        try:
+            tables = set(inspect(engine).get_table_names())
+            assert {"sources", "notes", "cards", "card_reviews"} <= tables
 
-        command.downgrade(_alembic_cfg, "base")
-        tables = set(inspect(engine).get_table_names())
-        assert "sources" not in tables
-        assert "notes" not in tables
-        assert "cards" not in tables
-        assert "card_reviews" not in tables
+            command.downgrade(_alembic_cfg, "base")
+            tables = set(inspect(engine).get_table_names())
+            assert "sources" not in tables
+            assert "notes" not in tables
+            assert "cards" not in tables
+            assert "card_reviews" not in tables
 
-        command.upgrade(_alembic_cfg, "head")
-        tables = set(inspect(engine).get_table_names())
-        assert {"sources", "notes", "cards", "card_reviews"} <= tables
+            command.upgrade(_alembic_cfg, "head")
+            tables = set(inspect(engine).get_table_names())
+            assert {"sources", "notes", "cards", "card_reviews"} <= tables
+        finally:
+            # Always restore to head, even on assertion/command failure,
+            # so the session-scoped `_migrated_engine` stays usable for
+            # every later DB test in the run.
+            command.upgrade(_alembic_cfg, "head")
     finally:
         engine.dispose()

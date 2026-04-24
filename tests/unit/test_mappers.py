@@ -118,6 +118,31 @@ def test_source_url_kind_round_trips() -> None:
     assert source_from_row(source_to_row(src)) == src
 
 
+def test_source_created_at_is_timezone_aware_after_round_trip() -> None:
+    """A tz-aware `created_at` survives persist→load without becoming naive.
+
+    Domain entities set `created_at = datetime.now(UTC)` (aware). The
+    existing round-trip tests compare `src == src` after round-trip,
+    which would pass even if tzinfo were silently stripped because
+    two references to the same default-factory result are `==` by
+    definition. This test constructs an explicit aware timestamp and
+    asserts both that the values compare equal AND that the retrieved
+    tzinfo is non-None.
+    """
+    from datetime import UTC, datetime
+
+    fixed = datetime(2026, 4, 24, 12, 34, 56, tzinfo=UTC)
+    src = Source(
+        kind=SourceKind.TOPIC,
+        user_prompt="p",
+        display_name="d",
+        created_at=fixed,
+    )
+    roundtripped = source_from_row(source_to_row(src))
+    assert roundtripped.created_at == fixed
+    assert roundtripped.created_at.tzinfo is not None
+
+
 # --- Corruption paths ----------------------------------------------------
 #
 # Every `*_from_row` funnels stdlib parse failures through
