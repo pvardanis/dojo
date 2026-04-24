@@ -6,6 +6,9 @@ from __future__ import annotations
 
 import uuid
 
+import pytest
+
+from app.application.exceptions import RepositoryRowCorrupt
 from app.domain.entities import Card, CardReview, Note, Source
 from app.domain.value_objects import (
     CardId,
@@ -23,6 +26,7 @@ from app.infrastructure.db.mappers import (
     source_from_row,
     source_to_row,
 )
+from app.infrastructure.db.models import CardRow, SourceRow
 
 
 def test_source_round_trip() -> None:
@@ -80,8 +84,8 @@ def test_card_round_trip_empty_tags() -> None:
     assert roundtripped == card
 
 
-def test_card_review_round_trip() -> None:
-    """CardReview rating survives Rating.value↔Rating."""
+def test_card_review_round_trip_correct() -> None:
+    """CardReview rating survives Rating.value↔Rating (correct)."""
     review = CardReview(
         card_id=CardId(uuid.uuid4()),
         rating=Rating.CORRECT,
@@ -89,3 +93,110 @@ def test_card_review_round_trip() -> None:
     roundtripped = card_review_from_row(card_review_to_row(review))
     assert roundtripped == review
     assert roundtripped.is_correct is True
+
+
+def test_card_review_round_trip_incorrect() -> None:
+    """Rating.INCORRECT also survives the mapper round-trip."""
+    review = CardReview(
+        card_id=CardId(uuid.uuid4()),
+        rating=Rating.INCORRECT,
+    )
+    roundtripped = card_review_from_row(card_review_to_row(review))
+    assert roundtripped == review
+    assert roundtripped.is_correct is False
+
+
+def test_source_url_kind_round_trips() -> None:
+    """URL kind survives .value↔Enum conversion."""
+    src = Source(
+        kind=SourceKind.URL,
+        user_prompt="p",
+        display_name="d",
+        identifier="https://example.com/article",
+        source_text="extracted body",
+    )
+    assert source_from_row(source_to_row(src)) == src
+
+
+# --- Corruption paths ----------------------------------------------------
+#
+# Every `*_from_row` funnels stdlib parse failures through
+# `_parse_or_corrupt`, which raises `RepositoryRowCorrupt`. The tests
+# below confirm that each parse site (UUID, enum, JSON tags) translates
+# rather than leaking `ValueError` / `JSONDecodeError`.
+
+
+def _make_source_row(**overrides: object) -> SourceRow:
+    """Build a well-formed SourceRow and apply targeted overrides."""
+    from datetime import UTC, datetime
+
+    defaults: dict[str, object] = {
+        "id": str(uuid.uuid4()),
+        "kind": SourceKind.TOPIC.value,
+        "user_prompt": "p",
+        "display_name": "d",
+        "identifier": None,
+        "source_text": None,
+        "created_at": datetime.now(UTC),
+    }
+    defaults.update(overrides)
+    return SourceRow(**defaults)  # type: ignore[arg-type]
+
+
+def _make_card_row(**overrides: object) -> CardRow:
+    """Build a well-formed CardRow and apply targeted overrides."""
+    from datetime import UTC, datetime
+
+    defaults: dict[str, object] = {
+        "id": str(uuid.uuid4()),
+        "source_id": str(uuid.uuid4()),
+        "question": "q",
+        "answer": "a",
+        "tags": "[]",
+        "created_at": datetime.now(UTC),
+    }
+    defaults.update(overrides)
+    return CardRow(**defaults)  # type: ignore[arg-type]
+
+
+def test_source_from_row_raises_on_bad_uuid() -> None:
+    """Corrupted id column surfaces as RepositoryRowCorrupt, not ValueError."""
+    row = _make_source_row(id="not-a-uuid")
+    with pytest.raises(RepositoryRowCorrupt) as exc_info:
+        source_from_row(row)
+    assert exc_info.value.table == "sources"
+    assert exc_info.value.field == "id"
+    assert "not-a-uuid" in exc_info.value.value
+
+
+def test_source_from_row_raises_on_bad_kind() -> None:
+    """Unknown enum string raises RepositoryRowCorrupt on the kind field."""
+    row = _make_source_row(kind="NOT_A_KIND")
+    with pytest.raises(RepositoryRowCorrupt) as exc_info:
+        source_from_row(row)
+    assert exc_info.value.field == "kind"
+    assert exc_info.value.value == "NOT_A_KIND"
+
+
+def test_card_from_row_raises_on_bad_json_tags() -> None:
+    """Malformed JSON in tags column raises RepositoryRowCorrupt."""
+    row = _make_card_row(tags="not json")
+    with pytest.raises(RepositoryRowCorrupt) as exc_info:
+        card_from_row(row)
+    assert exc_info.value.field == "tags"
+
+
+def test_card_from_row_raises_when_tags_json_is_not_a_list() -> None:
+    """Valid JSON of the wrong shape also raises RepositoryRowCorrupt."""
+    row = _make_card_row(tags='{"a": 1}')
+    with pytest.raises(RepositoryRowCorrupt) as exc_info:
+        card_from_row(row)
+    assert exc_info.value.field == "tags"
+
+
+def test_repository_row_corrupt_chains_original_cause() -> None:
+    """Chained __cause__ preserves the stdlib root cause for debugging."""
+    row = _make_source_row(id="not-a-uuid")
+    with pytest.raises(RepositoryRowCorrupt) as exc_info:
+        source_from_row(row)
+    assert isinstance(exc_info.value.__cause__, ValueError)
