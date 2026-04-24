@@ -26,3 +26,39 @@ class DraftExpired(DojoError):
 
 class LLMOutputMalformed(DojoError):
     """Raised when the LLM's structured output fails DTO validation."""
+
+
+class LLMRateLimited(DojoError):
+    """Raised after all tenacity retries exhaust on a 429 response."""
+
+
+class LLMAuthFailed(DojoError):
+    """Raised when the provider rejects credentials (401 or 403)."""
+
+
+class LLMUnreachable(DojoError):
+    """Raised on transport failure after tenacity retries."""
+
+
+class LLMContextTooLarge(DojoError):
+    """Raised when the payload exceeds the model's context window."""
+
+
+class LLMInvalidRequest(DojoError):
+    """Raised on permanent 4xx (non-auth, non-context-size)."""
+
+
+class SourceNotFound(DojoError):
+    """Raised when a FILE path does not exist."""
+
+
+class SourceUnreadable(DojoError):
+    """Raised when a FILE path cannot be read as UTF-8 text."""
+
+
+class SourceFetchFailed(DojoError):
+    """Raised on URL fetch failure (non-2xx, timeout, transport)."""
+
+
+class SourceNotArticle(DojoError):
+    """Raised when extraction yields no usable article text."""
