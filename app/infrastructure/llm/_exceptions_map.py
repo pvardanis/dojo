@@ -1,14 +1,35 @@
 # ABOUTME: Anthropic SDK exception → domain exception wrap helpers.
-# ABOUTME: Context-overflow sniff + 429 / 400 payload extraction.
+# ABOUTME: Dispatch table + sniff + 429/400 payload extraction.
 """SDK → domain wrap helpers for AnthropicLLMProvider."""
 
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from typing import Any
 
 import anthropic
 
+# These four SDK error classes live in `anthropic._exceptions` and
+# aren't re-exported from the top-level `anthropic` module in SDK
+# 0.97. Import them directly so `ty` resolves the symbols. If a
+# future SDK version promotes them to the public namespace, this
+# block can be swapped for `anthropic.ServiceUnavailableError` etc.
+from anthropic._exceptions import (  # type: ignore[import-not-found]
+    DeadlineExceededError,
+    OverloadedError,
+    RequestTooLargeError,
+    ServiceUnavailableError,
+)
+
+from app.application.exceptions import (
+    DojoError,
+    LLMAuthFailed,
+    LLMContextTooLarge,
+    LLMRateLimited,
+    LLMRequestRejected,
+    LLMUnreachable,
+)
 from app.logging_config import get_logger
 
 log = get_logger(__name__)
@@ -121,3 +142,101 @@ def context_payload(err: anthropic.BadRequestError) -> dict[str, Any]:
     except (ValueError, IndexError):
         return {"tokens": None, "limit": None}
     return {"tokens": tokens, "limit": limit}
+
+
+# --- SDK → domain dispatch --------------------------------------------
+#
+# Individual wrapper helpers — each is declared with its narrow SDK
+# type so the payload extractors typecheck, but the dispatch table
+# stores them as `Callable[[Any], DojoError]` because the runtime
+# pairing is guaranteed by `isinstance(err, sdk_cls)` in
+# `wrap_sdk_error`.
+
+
+def _wrap_rate_limit(err: anthropic.RateLimitError) -> DojoError:
+    """Wrap RateLimitError with retry-after + request-id payload."""
+    return LLMRateLimited(str(err), **rate_limit_payload(err))
+
+
+def _wrap_auth_failed(err: anthropic.APIError) -> DojoError:
+    """Wrap 401 / 403 errors as LLMAuthFailed (no retry)."""
+    return LLMAuthFailed(str(err))
+
+
+def _wrap_unreachable(err: anthropic.APIError) -> DojoError:
+    """Wrap connection, timeout, and 5xx errors as LLMUnreachable."""
+    return LLMUnreachable(str(err))
+
+
+def _wrap_bad_request(err: anthropic.BadRequestError) -> DojoError:
+    """Split 400s into LLMContextTooLarge vs LLMRequestRejected.
+
+    Uses `is_context_overflow` + `context_payload` to distinguish
+    a real context-window overflow (retryable by shrinking input)
+    from any other permanent 4xx (malformed tool schema, etc.).
+    """
+    if is_context_overflow(err):
+        return LLMContextTooLarge(str(err), **context_payload(err))
+    return LLMRequestRejected(str(err))
+
+
+def _wrap_rejected(err: anthropic.APIError) -> DojoError:
+    """Wrap other permanent 4xx errors as LLMRequestRejected."""
+    return LLMRequestRejected(str(err))
+
+
+# Specificity order: subclasses before superclasses.
+# `isinstance(err, sdk_cls)` picks the first match. Adding a new
+# mapping = append one row here (plus a `_wrap_*` helper if the
+# existing ones don't fit) — `wrap_sdk_error` itself doesn't change.
+_SDK_DISPATCH: tuple[
+    tuple[type[anthropic.APIError], Callable[[Any], DojoError]], ...
+] = (
+    (anthropic.RateLimitError, _wrap_rate_limit),
+    (anthropic.AuthenticationError, _wrap_auth_failed),
+    (anthropic.PermissionDeniedError, _wrap_auth_failed),
+    (anthropic.APITimeoutError, _wrap_unreachable),
+    (anthropic.APIConnectionError, _wrap_unreachable),
+    (anthropic.InternalServerError, _wrap_unreachable),
+    (ServiceUnavailableError, _wrap_unreachable),
+    (OverloadedError, _wrap_unreachable),
+    (DeadlineExceededError, _wrap_unreachable),
+    (anthropic.BadRequestError, _wrap_bad_request),
+    (anthropic.ConflictError, _wrap_rejected),
+    (anthropic.NotFoundError, _wrap_rejected),
+    (RequestTooLargeError, _wrap_rejected),
+    (anthropic.UnprocessableEntityError, _wrap_rejected),
+    (anthropic.APIResponseValidationError, _wrap_rejected),
+)
+
+
+def mapped_sdk_types() -> set[type[anthropic.APIError]]:
+    """Return the SDK error classes currently covered by the dispatch.
+
+    Exposed so the tripwire test can assert every concrete SDK
+    subclass either appears here or is handled via a superclass
+    entry in ``_SDK_DISPATCH``.
+
+    :returns: Set of SDK error classes with explicit dispatch rows.
+    """
+    return {cls for cls, _ in _SDK_DISPATCH}
+
+
+def wrap_sdk_error(err: anthropic.APIError) -> DojoError:
+    """Translate any SDK error to its domain counterpart.
+
+    Walks ``_SDK_DISPATCH`` and returns the first wrapper whose class
+    filter matches. A subclass that falls through every explicit row
+    ends up at the ``LLMRequestRejected`` default — a permanent 4xx
+    equivalent that does NOT retry, so an unknown SDK error becomes
+    a user-visible permanent error rather than a raw SDK leak past
+    the domain boundary.
+
+    :param err: SDK-raised exception to translate.
+    :returns: A ``DojoError`` subclass; callers chain it with
+        ``raise wrap_sdk_error(err) from err``.
+    """
+    for sdk_cls, wrapper in _SDK_DISPATCH:
+        if isinstance(err, sdk_cls):
+            return wrapper(err)
+    return LLMRequestRejected(str(err))

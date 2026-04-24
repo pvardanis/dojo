@@ -8,6 +8,14 @@ from typing import Any, cast
 
 import anthropic
 import pydantic
+
+# See `_exceptions_map.py` for why these three aren't imported from the
+# top-level `anthropic` module in SDK 0.97.
+from anthropic._exceptions import (  # type: ignore[import-not-found]
+    DeadlineExceededError,
+    OverloadedError,
+    ServiceUnavailableError,
+)
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -16,19 +24,8 @@ from tenacity import (
 )
 
 from app.application.dtos import CardDTO, NoteDTO
-from app.application.exceptions import (
-    LLMAuthFailed,
-    LLMContextTooLarge,
-    LLMOutputMalformed,
-    LLMRateLimited,
-    LLMRequestRejected,
-    LLMUnreachable,
-)
-from app.infrastructure.llm._exceptions_map import (
-    context_payload,
-    is_context_overflow,
-    rate_limit_payload,
-)
+from app.application.exceptions import LLMOutputMalformed
+from app.infrastructure.llm._exceptions_map import wrap_sdk_error
 from app.infrastructure.llm._response_parser import parse_and_validate
 from app.infrastructure.llm.tool_schema import TOOL_DEFINITION
 from app.logging_config import get_logger
@@ -96,8 +93,8 @@ class AnthropicLLMProvider:
         exactly one additional call with a stricter prompt (D-03a).
         Transient SDK errors (429 / 5xx / connection / timeout) are
         retried up to three times inside ``_sdk_call`` via tenacity
-        (D-03). Every other SDK error wraps to a domain exception at
-        the outer boundary (D-03b).
+        (D-03). Every other SDK error is translated at the outer
+        boundary by ``wrap_sdk_error`` (D-03b).
 
         :param source_text: Extracted study material, or ``None`` for
             TOPIC source kind (LLM generates from prompt alone).
@@ -111,7 +108,8 @@ class AnthropicLLMProvider:
         :raises LLMContextTooLarge: On a 400 whose body reports
             context-window overflow.
         :raises LLMRequestRejected: On any other permanent 4xx
-            (malformed tool schema, not-found, unprocessable).
+            (malformed tool schema, not-found, unprocessable) or an
+            SDK error subclass not yet in the dispatch table.
         :raises LLMOutputMalformed: When the tool_use output fails DTO
             validation twice (initial + one semantic retry).
         """
@@ -133,33 +131,16 @@ class AnthropicLLMProvider:
                     return parse_and_validate(resp)
                 except pydantic.ValidationError as e:
                     raise LLMOutputMalformed(str(e)) from e
-        except anthropic.RateLimitError as e:
-            raise LLMRateLimited(str(e), **rate_limit_payload(e)) from e
-        except (
-            anthropic.AuthenticationError,
-            anthropic.PermissionDeniedError,
-        ) as e:
-            raise LLMAuthFailed(str(e)) from e
-        except (
-            anthropic.APIConnectionError,
-            anthropic.APITimeoutError,
-            anthropic.InternalServerError,
-        ) as e:
-            raise LLMUnreachable(str(e)) from e
-        except anthropic.BadRequestError as e:
-            if is_context_overflow(e):
-                raise LLMContextTooLarge(str(e), **context_payload(e)) from e
-            raise LLMRequestRejected(str(e)) from e
-        except (
-            anthropic.NotFoundError,
-            anthropic.UnprocessableEntityError,
-        ) as e:
-            raise LLMRequestRejected(str(e)) from e
+        except anthropic.APIError as e:
+            raise wrap_sdk_error(e) from e
 
-    # Retry whitelist is transients only — 4xx (Auth, BadRequest,
-    # NotFound, UnprocessableEntity) must NOT retry (CONTEXT D-03).
-    # Using the parent `APIStatusError` would retry 4xx and break
-    # SC #4; keep the exact 4-tuple below.
+    # Retry whitelist is transients only — 4xx must NOT retry
+    # (CONTEXT D-03). Using the parent `APIStatusError` would retry
+    # 4xx and break SC #4; keep the explicit tuple below.
+    # 5xx coverage: InternalServerError (500 fallback),
+    # ServiceUnavailable (503), DeadlineExceeded (504), Overloaded
+    # (529) — none are subclasses of InternalServerError, so each
+    # must be listed independently or tenacity silently skips them.
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=1, max=10),
@@ -169,6 +150,9 @@ class AnthropicLLMProvider:
                 anthropic.APIConnectionError,
                 anthropic.APITimeoutError,
                 anthropic.InternalServerError,
+                ServiceUnavailableError,
+                OverloadedError,
+                DeadlineExceededError,
             )
         ),
         reraise=True,
