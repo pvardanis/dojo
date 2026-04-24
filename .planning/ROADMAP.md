@@ -84,7 +84,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   5. `InMemoryDraftStore` satisfies its contract tests for 30-minute TTL eviction (via a fake clock), atomic `pop` under concurrent-save simulation, and two-coroutine same-token races where exactly one succeeds
   6. URL fetcher raises `SourceNotArticle` when extraction returns under the minimum-length threshold or matches the paywall heuristic; timeouts and non-2xx statuses surface as `SourceFetchFailed`
   7. Regenerating against an existing Source overwrites its Note row and appends new Card rows without touching existing Cards, verified by an integration test
-**Plans**: TBD
+**Plans**: 5 plans
+  - [ ] 03-01-PLAN.md — Runtime dependency promotion (anthropic, tenacity, trafilatura, httpx->runtime, respx dev) + 9 new DojoError subclasses in app/application/exceptions.py
+  - [ ] 03-02-PLAN.md — ORM row classes (4) + pure mapper functions (8) + Alembic migration 0002 creating the initial schema + M9 metadata smoke + upgrade/downgrade round-trip
+  - [ ] 03-03-PLAN.md — 4 SQL repositories + 4 parametrized [fake, sql] contract tests + SC #2 atomic-save rollback + SC #7 regenerate (Note overwrites, Cards append)
+  - [ ] 03-04-PLAN.md — AnthropicLLMProvider (tenacity + Pydantic DTO + semantic retry + SDK wrap) + strict:true tool schema + respx-backed SC #3 and SC #4 integration tests
+  - [ ] 03-05-PLAN.md — InMemoryDraftStore + read_file + fetch_url + 3 contract tests + SC #5 (TTL + concurrent-pop 10x) + SC #6 (URL matrix) + composition-root factories in app/main.py + arch doc D-09 extensions
 
 ### Phase 4: Generate → Review → Save Flow
 **Goal**: Users can drive the full generation funnel through the web UI — pick FILE / URL / TOPIC, provide a user prompt, land on a review screen with editable note and per-card edit/reject controls, approve, and save — with everything persisted atomically only on explicit save, and nothing escaping the draft store without user action.
@@ -146,7 +151,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 |-------|----------------|--------|-----------|
 | 1. Project Scaffold & Tooling | 0/6 | Not started | - |
 | 2. Domain & Application Spine | 4/5 | In progress | - |
-| 3. Infrastructure Adapters | 0/TBD | Not started | - |
+| 3. Infrastructure Adapters | 0/5 | Not started | - |
 | 4. Generate → Review → Save Flow | 0/TBD | Not started | - |
 | 5. Drill Mode | 0/TBD | Not started | - |
 | 6. Read Mode & Card Management | 0/TBD | Not started | - |
