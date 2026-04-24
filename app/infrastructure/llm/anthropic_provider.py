@@ -89,12 +89,9 @@ class AnthropicLLMProvider:
     ) -> tuple[NoteDTO, list[CardDTO]]:
         """Generate a note and Q&A cards from source text + user prompt.
 
-        On a malformed tool-use response (fails DTO validation), issues
-        exactly one additional call with a stricter prompt (D-03a).
-        Transient SDK errors (429 / 5xx / connection / timeout) are
-        retried up to three times inside ``_sdk_call`` via tenacity
-        (D-03). Every other SDK error is translated at the outer
-        boundary by ``wrap_sdk_error`` (D-03b).
+        Delegates the happy-path + semantic retry to
+        ``_generate_with_retry``; translates any SDK-layer error to a
+        domain exception at this outer boundary (D-03b).
 
         :param source_text: Extracted study material, or ``None`` for
             TOPIC source kind (LLM generates from prompt alone).
@@ -114,25 +111,56 @@ class AnthropicLLMProvider:
             validation twice (initial + one semantic retry).
         """
         try:
-            try:
-                resp = self._sdk_call(_SYSTEM_PROMPT, source_text, user_prompt)
-                return parse_and_validate(resp)
-            except pydantic.ValidationError as ve:
-                log.warning(
-                    "llm.malformed.retrying_stricter",
-                    validation_error=str(ve),
-                )
-                resp = self._sdk_call(
-                    _SYSTEM_PROMPT + _STRICTER_ADDENDUM,
-                    source_text,
-                    user_prompt,
-                )
-                try:
-                    return parse_and_validate(resp)
-                except pydantic.ValidationError as e:
-                    raise LLMOutputMalformed(str(e)) from e
+            return self._generate_with_retry(source_text, user_prompt)
         except anthropic.APIError as e:
             raise wrap_sdk_error(e) from e
+
+    def _generate_with_retry(
+        self,
+        source_text: str | None,
+        user_prompt: str,
+    ) -> tuple[NoteDTO, list[CardDTO]]:
+        """Two-attempt DTO validation with a stricter-prompt retry (D-03a).
+
+        First attempt: the default system prompt. On
+        ``pydantic.ValidationError`` log the reason and fall through
+        to a second attempt with ``_STRICTER_ADDENDUM`` appended to
+        the system prompt. A second failure raises
+        ``LLMOutputMalformed``; no third attempt.
+
+        Does NOT catch ``anthropic.APIError`` — those propagate to the
+        caller (``generate_note_and_cards``) which owns SDK → domain
+        translation.
+
+        :param source_text: Extracted study material, or ``None`` for
+            TOPIC source kind.
+        :param user_prompt: User instruction shaping the note.
+        :returns: ``(NoteDTO, list[CardDTO])`` from whichever attempt
+            succeeded.
+        :raises LLMOutputMalformed: When both attempts fail DTO
+            validation; chains to the second attempt's
+            ``pydantic.ValidationError``.
+        """
+        try:
+            resp = self._sdk_call(_SYSTEM_PROMPT, source_text, user_prompt)
+            return parse_and_validate(resp)
+        except pydantic.ValidationError as ve:
+            log.warning(
+                "llm.malformed.retrying_stricter",
+                validation_error=str(ve),
+            )
+
+        # Second attempt — outside the `except` block so an anthropic
+        # error here doesn't chain onto the prior ValidationError.
+        resp = self._sdk_call(
+            _SYSTEM_PROMPT + _STRICTER_ADDENDUM,
+            source_text,
+            user_prompt,
+        )
+        try:
+            return parse_and_validate(resp)
+        except pydantic.ValidationError as e:
+            raise LLMOutputMalformed(str(e)) from e
 
     # Retry whitelist is transients only — 4xx must NOT retry
     # (CONTEXT D-03). Using the parent `APIStatusError` would retry
