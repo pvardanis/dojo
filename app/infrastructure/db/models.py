@@ -9,7 +9,16 @@ from datetime import datetime
 from sqlalchemy import CheckConstraint, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.domain.value_objects import Rating, SourceKind
 from app.infrastructure.db.session import Base
+
+# Derive CHECK-constraint SQL from the domain enums so that adding a
+# `SourceKind` / `Rating` variant propagates here automatically.
+# The Alembic migration file keeps its hardcoded string — migrations
+# are frozen schema snapshots and must stay reproducible regardless
+# of what the current enum looks like.
+_SOURCE_KIND_SQL = ", ".join(f"'{k.value}'" for k in SourceKind)
+_RATING_SQL = ", ".join(f"'{r.value}'" for r in Rating)
 
 
 class SourceRow(Base):
@@ -18,7 +27,7 @@ class SourceRow(Base):
     __tablename__ = "sources"
     __table_args__ = (
         CheckConstraint(
-            "kind IN ('file', 'url', 'topic')",
+            f"kind IN ({_SOURCE_KIND_SQL})",
             name="ck_sources_kind",
         ),
     )
@@ -69,7 +78,7 @@ class CardReviewRow(Base):
     __tablename__ = "card_reviews"
     __table_args__ = (
         CheckConstraint(
-            "rating IN ('correct', 'incorrect')",
+            f"rating IN ({_RATING_SQL})",
             name="ck_card_reviews_rating",
         ),
     )

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from sqlalchemy import CheckConstraint, ForeignKeyConstraint
 
+from app.domain.value_objects import Rating, SourceKind
 from app.infrastructure.db import models as _models  # noqa: F401
 from app.infrastructure.db.session import Base
 
@@ -54,15 +55,38 @@ def test_card_reviews_fk_cascades_from_cards() -> None:
     assert fk.ondelete == "CASCADE"
 
 
-def test_sources_has_kind_check_constraint() -> None:
-    """`sources.kind` is constrained to the three SourceKind values."""
+def test_sources_kind_check_covers_all_source_kinds() -> None:
+    """`sources.kind` CHECK body lists every `SourceKind` value.
+
+    Guards against "added a SourceKind variant but forgot to write an
+    alembic migration that expands the CHECK". The declarative
+    `__table_args__` derives the body from the enum, so any drift
+    between the live metadata and the domain enum is a bug.
+    """
     table = Base.metadata.tables["sources"]
-    checks = [c for c in table.constraints if isinstance(c, CheckConstraint)]
-    assert any(c.name == "ck_sources_kind" for c in checks)
+    check = next(
+        c
+        for c in table.constraints
+        if isinstance(c, CheckConstraint) and c.name == "ck_sources_kind"
+    )
+    body = str(check.sqltext)
+    for kind in SourceKind:
+        assert f"'{kind.value}'" in body, (
+            f"SourceKind.{kind.name} missing from {check.name}"
+        )
 
 
-def test_card_reviews_has_rating_check_constraint() -> None:
-    """`card_reviews.rating` is constrained to the two Rating values."""
+def test_card_reviews_rating_check_covers_all_ratings() -> None:
+    """`card_reviews.rating` CHECK body lists every `Rating` value."""
     table = Base.metadata.tables["card_reviews"]
-    checks = [c for c in table.constraints if isinstance(c, CheckConstraint)]
-    assert any(c.name == "ck_card_reviews_rating" for c in checks)
+    check = next(
+        c
+        for c in table.constraints
+        if isinstance(c, CheckConstraint)
+        and c.name == "ck_card_reviews_rating"
+    )
+    body = str(check.sqltext)
+    for rating in Rating:
+        assert f"'{rating.value}'" in body, (
+            f"Rating.{rating.name} missing from {check.name}"
+        )
