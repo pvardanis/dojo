@@ -8,6 +8,7 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 from app.infrastructure.db.session import Base  # noqa: F401 (M9)
+from app.infrastructure.db import models as _models  # noqa: F401 (M9)
 from app.settings import get_settings
 
 config = context.config
