@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Phase 2 complete — all 5 plans shipped; ready to plan Phase 3 (Infrastructure Adapters)
-last_updated: "2026-04-23T12:26:00.000Z"
-last_activity: 2026-04-23 -- Phase 2 Plan 05 (contract harness + import-linter) complete on phase-02-plan-05-contract-harness-import-linter; Phase 2 closed
+status: "Plan 02-05 delivered tests/contract/__init__.py (3 LOC) + tests/contract/test_llm_provider_contract.py (38 LOC) — TEST-03 harness parameterised over ["fake", "anthropic"] with double-gate (RUN_LLM_TESTS + pytest.importorskip on app.infrastructure.llm.anthropic_provider); anthropic leg auto-skips cleanly in Phase 2 whether RUN_LLM_TESTS is set or not. pyproject.toml gained import-linter>=2.0 + [tool.importlinter] with two forbidden contracts (app.domain and app.application must not import app.infrastructure or app.web). Makefile lint: target extended to two lines (ruff + lint-imports). Negative-path proof captured (deliberate boundary violation made lint-imports exit non-zero, reverted without commit). make check: 94 passed, 1 skipped, 97% coverage, 2.48s end-to-end. Discharges Phase 2 SC #5 + SC #6 and TEST-03; closes Phase-1 LEARNINGS open item "Phase-2 boundary lint"."
+stopped_at: Phase 3 context gathered
+last_updated: "2026-04-24T10:00:54.407Z"
+last_activity: 2026-04-23 -- Plan 02-05 complete; SUMMARY.md + STATE + ROADMAP + REQUIREMENTS updated; Phase 1 LEARNINGS open item closed
 progress:
   total_phases: 7
   completed_phases: 2
-  total_plans: 5
+  total_plans: 11
   completed_plans: 11
-  percent: 28
+  percent: 100
 ---
 
 # Project State
@@ -107,6 +107,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-04-22T11:42:00.000Z
-Stopped at: Phase 2 Plan 04 complete on phase-02-plan-04-generate-from-source-use-case; push + open PR, then start Plan 05 (TEST-03 contract harness + import-linter boundary enforcement)
-Resume file: .planning/phases/02-domain-application-spine/02-05-contract-harness-import-linter-PLAN.md
+Last session: --stopped-at
+Stopped at: Phase 3 context gathered
+Resume file: --resume-file
