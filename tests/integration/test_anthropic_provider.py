@@ -470,4 +470,8 @@ def test_default_client_uses_max_retries_zero_and_timeout(
     AnthropicLLMProvider()
     assert captured["max_retries"] == 0
     assert captured["timeout"] == 30.0
-    assert captured["api_key"] == "dev-placeholder"
+    # Don't hardcode the key — CI sets ANTHROPIC_API_KEY=ci-placeholder
+    # while local dev falls back to "dev-placeholder". Pull the same
+    # settings the production code uses so this passes everywhere.
+    expected_key = get_settings().anthropic_api_key.get_secret_value()
+    assert captured["api_key"] == expected_key
