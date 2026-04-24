@@ -45,6 +45,6 @@ def test_alembic_upgrade_creates_version_table(tmp_path: Path) -> None:
                 text("SELECT version_num FROM alembic_version")
             )
             version = version_result.scalar_one()
-            assert version == "0001", version
+            assert version == "0002", version
     finally:
         engine.dispose()
