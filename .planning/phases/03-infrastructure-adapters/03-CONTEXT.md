@@ -130,7 +130,7 @@ update.
         wait=wait_exponential(multiplier=1, min=1, max=10),
         retry=retry_if_exception_type((
             anthropic.RateLimitError,
-            anthropic.APIStatusError,      # 5xx
+            anthropic.InternalServerError,  # 5xx
             anthropic.APIConnectionError,  # network
         )),
         reraise=True,
@@ -139,6 +139,8 @@ update.
   - Whitelisted exception types only. `AuthenticationError` (401),
     `BadRequestError` (400), `NotFoundError` (404), etc. propagate
     immediately — they're permanent failures, retrying burns budget.
+    `InternalServerError` is the SDK's 5xx subclass; `APIStatusError` is
+    the non-2xx base and would over-include 4xx.
 
 - **D-03a:** **Semantic retry is separate from tenacity.** Per spec
   §6.1, one retry on malformed-JSON with stricter prompt, then raise
